@@ -1,0 +1,7 @@
+{
+  "name": "maes-de-joelho-app",
+  "description": "Um aplicativo cristão para mães intercessoras, focado em oração diária, intercessão pelos filhos e fortalecimento da Geração Compromisso.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

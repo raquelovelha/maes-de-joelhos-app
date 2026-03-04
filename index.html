@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Despertar de Débora</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&family=Dancing+Script:wght@400..700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: '#FF4D00', // Laranja vibrante
+                            secondary: '#E62E00', // Vermelho solar
+                            accent: '#FFB300', // Amarelo sol
+                            gc: '#5D00B8', // Roxo Geração Compromisso
+                            gcLight: '#7B2CBF',
+                            dark: '#2D2D2D', 
+                            cream: '#FFF9F1',
+                            soft: '#FFF0E6',
+                            border: '#FFD9C6',
+                            // Novas cores da paleta feminina/espiritual
+                            pink: '#FCE7F3', // Rosa suave
+                            lavender: '#EDE9FE', // Lavanda suave
+                            rose: '#F472B6', // Rosa destaque
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                        calligraphy: ['"Dancing Script"', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FFF9F1;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .serif-font { font-family: 'Playfair Display', serif; }
+        .calligraphy-font { font-family: 'Dancing Script', cursive; }
+        .gradient-brand {
+            background: linear-gradient(135deg, #FF6B00 0%, #E62E00 100%);
+        }
+        .gradient-gc {
+            background: linear-gradient(135deg, #5D00B8 0%, #FF4D00 100%);
+        }
+        .gradient-female {
+            background: linear-gradient(135deg, #FCE7F3 0%, #EDE9FE 100%);
+        }
+        .soft-gradient {
+            background: linear-gradient(135deg, #FFF0E6 0%, #FFF9F1 100%);
+        }
+        .bottom-nav-blur {
+            backdrop-filter: blur(8px);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slideUp { animation: slideUp 0.3s ease-out forwards; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/11.3.1/firebase-firestore.js",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-brand-cream text-gray-800 antialiased overflow-x-hidden">
+    <div id="root"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
