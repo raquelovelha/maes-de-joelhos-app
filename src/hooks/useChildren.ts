@@ -17,6 +17,8 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
           childrenArray.push({ id: doc.id, ...doc.data() } as ChildOfPrayer);
         });
         setChildren(childrenArray);
+      }, (error: any) => {
+        console.error("Erro no Snapshot do Firebase:", error);
       });
       return () => unsubscribe();
     } catch (error) {
@@ -24,28 +26,51 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   }, []);
 
-  // O restante das funções permanece igual...
- const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
+  // Função de salvar com limpeza de campos para evitar erros
+  const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
     try {
-      // Adiciona o documento na coleção "filhos" que já existe no seu Firebase
-      const docRef = await addDoc(collection(db, "filhos"), {
-        ...child,
-        status: 'active', // Mudamos para active para aparecer na hora
+      console.log("Iniciando salvamento no Firebase...");
+      
+      // Criamos um objeto limpo para o Firebase não rejeitar campos 'undefined'
+      const childToSave = {
+        name: child.name || "Sem Nome",
+        type: child.type || "biologico",
+        birthDate: child.birthDate || "",
+        whatsapp: child.whatsapp || "",
+        status: 'active', // Força 'active' para aparecer na lista
         startDate: new Date().toISOString(),
-        prayerMinutes: 0
-      });
-      console.log("Filho salvo com ID: ", docRef.id);
+        prayerMinutes: 0,
+        individualRequests: [],
+        location: child.location || "Não informada",
+        notes: child.notes || ""
+      };
+
+      const docRef = await addDoc(collection(db, "filhos"), childToSave);
+      
+      console.log("Sucesso! ID gerado:", docRef.id);
       alert("Filho cadastrado com sucesso!");
-    } catch (e) {
-      console.error("Erro detalhado ao salvar: ", e);
-      alert("Erro ao salvar no banco. Verifique o console.");
+    } catch (e: any) {
+      console.error("ERRO COMPLETO DO FIREBASE:", e);
+      // O alerta agora mostrará o motivo real (ex: falta de permissão)
+      alert("Erro ao salvar: " + (e.message || "Erro desconhecido"));
     }
   };
 
-  const acceptChild = (id: string) => {};
-  const addRequest = (childId: string, text: string) => {};
-  const toggleRequestStatus = (childId: string, requestId: string) => {};
-  const registerPrayerTime = (childId: string, minutes: number) => {};
+  const acceptChild = (id: string) => {
+    console.log("Função acceptChild chamada para:", id);
+  };
+
+  const addRequest = (childId: string, text: string) => {
+    console.log("Adicionando pedido para:", childId);
+  };
+
+  const toggleRequestStatus = (childId: string, requestId: string) => {
+    console.log("Alternando status do pedido:", requestId);
+  };
+
+  const registerPrayerTime = (childId: string, minutes: number) => {
+    console.log("Registrando tempo de oração:", minutes);
+  };
 
   return { 
     children, 
