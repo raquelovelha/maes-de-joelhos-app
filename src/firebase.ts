@@ -1,7 +1,7 @@
 // @ts-ignore
-import { initializeApp } from "firebase/app";
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
 // @ts-ignore
-import { getFirestore } from "firebase/firestore";
+import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBmpyvlLrK3SQBQpUWVizbI09WKo--k5Ro",
@@ -12,8 +12,5 @@ const firebaseConfig = {
   appId: "1:905186440856:web:37c4a455e2223dfbaa82ed"
 };
 
-// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
-
-// Exporta o Banco de Dados para usarmos em outros arquivos
 export const db = getFirestore(app);

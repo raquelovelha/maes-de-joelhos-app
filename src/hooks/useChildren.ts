@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 // @ts-ignore
-import { collection, query, onSnapshot, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, query, onSnapshot, addDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { ChildOfPrayer } from '../types';
 
 export const useChildren = (initialData: ChildOfPrayer[] = []) => {
@@ -9,18 +9,22 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
 
   // Busca os nomes do Firebase em tempo real
   useEffect(() => {
-    const q = query(collection(db, "filhos"));
-    const unsubscribe = onSnapshot(q, (querySnapshot: any) => {
-      const childrenArray: ChildOfPrayer[] = [];
-      querySnapshot.forEach((doc: any) => {
-        childrenArray.push({ id: doc.id, ...doc.data() } as ChildOfPrayer);
+    try {
+      const q = query(collection(db, "filhos"));
+      const unsubscribe = onSnapshot(q, (querySnapshot: any) => {
+        const childrenArray: ChildOfPrayer[] = [];
+        querySnapshot.forEach((doc: any) => {
+          childrenArray.push({ id: doc.id, ...doc.data() } as ChildOfPrayer);
+        });
+        setChildren(childrenArray);
       });
-      setChildren(childrenArray);
-    });
-    return () => unsubscribe();
+      return () => unsubscribe();
+    } catch (error) {
+      console.error("Erro ao conectar com o Firestore:", error);
+    }
   }, []);
 
-  // Função para a mãe cadastrar um novo filho no banco
+  // O restante das funções permanece igual...
   const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
     try {
       await addDoc(collection(db, "filhos"), {
@@ -33,7 +37,6 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   };
 
-  // Funções de apoio (vazias por enquanto para não dar erro no App.tsx)
   const acceptChild = (id: string) => {};
   const addRequest = (childId: string, text: string) => {};
   const toggleRequestStatus = (childId: string, requestId: string) => {};
