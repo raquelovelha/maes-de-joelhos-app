@@ -1,16 +1,16 @@
 
 // Responsabilidade: Orquestrador de Navegação e Injeção de Dependências. | Inputs: App State | Outputs: View Router.
 import React, { useState, useEffect } from 'react';
-import Layout from './src/components/Layout';
-import HomeView from './src/views/Home';
-import PrayersView from './src/views/Prayers';
-import FilhosView from './src/views/Filhos';
-import CommunityView from './src/views/Community';
-import TimerView from './src/views/Timer';
-import ProfileView from './src/views/Profile';
-import { SplashScreen } from './src/components/UI';
-import { useChildren } from './src/hooks/useChildren';
-import { usePrayers } from './src/hooks/usePrayers';
+import Layout from './components/Layout';
+import HomeView from './views/Home';
+import PrayersView from './views/Prayers';
+import FilhosView from './views/Filhos';
+import CommunityView from './views/Community';
+import TimerView from './views/Timer';
+import ProfileView from './views/Profile';
+import { SplashScreen } from './components/UI';
+import { useChildren } from './hooks/useChildren';
+import { usePrayers } from './hooks/usePrayers';
 import { INITIAL_PRAYER_REQUESTS } from './constants';
 import { UserStats, UserProfile, ChildOfPrayer } from './types';
 
