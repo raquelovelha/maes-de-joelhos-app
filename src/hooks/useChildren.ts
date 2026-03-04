@@ -2,12 +2,12 @@ import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 // @ts-ignore
 import { collection, query, onSnapshot, addDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { ChildOfPrayer } from '../types';
+import { ChildOfPrayer, ChildPrayerRequest } from '../types';
 
 export const useChildren = (initialData: ChildOfPrayer[] = []) => {
   const [children, setChildren] = useState<ChildOfPrayer[]>(initialData);
 
-  // Busca os nomes do Firebase em tempo real
+  // Monitora o banco de dados em tempo real
   useEffect(() => {
     try {
       const q = query(collection(db, "filhos"));
@@ -18,7 +18,7 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
         });
         setChildren(childrenArray);
       }, (error: any) => {
-        console.error("Erro no Snapshot do Firebase:", error);
+        console.error("Erro na escuta do Firebase:", error);
       });
       return () => unsubscribe();
     } catch (error) {
@@ -26,50 +26,84 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   }, []);
 
-  // Função de salvar com limpeza de campos para evitar erros
+  // Cadastro de novo filho
   const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
     try {
-      console.log("Iniciando salvamento no Firebase...");
-      
-      // Criamos um objeto limpo para o Firebase não rejeitar campos 'undefined'
       const childToSave = {
-        name: child.name || "Sem Nome",
-        type: child.type || "biologico",
-        birthDate: child.birthDate || "",
-        whatsapp: child.whatsapp || "",
-        status: 'active', // Força 'active' para aparecer na lista
+        ...child,
+        status: 'active',
         startDate: new Date().toISOString(),
         prayerMinutes: 0,
-        individualRequests: [],
-        location: child.location || "Não informada",
-        notes: child.notes || ""
+        individualRequests: []
       };
-
-      const docRef = await addDoc(collection(db, "filhos"), childToSave);
-      
-      console.log("Sucesso! ID gerado:", docRef.id);
+      await addDoc(collection(db, "filhos"), childToSave);
       alert("Filho cadastrado com sucesso!");
     } catch (e: any) {
-      console.error("ERRO COMPLETO DO FIREBASE:", e);
-      // O alerta agora mostrará o motivo real (ex: falta de permissão)
       alert("Erro ao salvar: " + (e.message || "Erro desconhecido"));
     }
   };
 
-  const acceptChild = (id: string) => {
-    console.log("Função acceptChild chamada para:", id);
+  // ADICIONAR PEDIDO: Grava um novo motivo de oração no Firebase
+  const addRequest = async (childId: string, text: string) => {
+    try {
+      const childRef = doc(db, "filhos", childId);
+      const child = children.find(c => c.id === childId);
+      if (!child) return;
+
+      const newRequest: ChildPrayerRequest = {
+        id: crypto.randomUUID(),
+        text: text,
+        isCompleted: false,
+        createdAt: new Date().toISOString()
+      };
+
+      await updateDoc(childRef, {
+        individualRequests: [...(child.individualRequests || []), newRequest]
+      });
+    } catch (e) {
+      console.error("Erro ao adicionar pedido:", e);
+    }
   };
 
-  const addRequest = (childId: string, text: string) => {
-    console.log("Adicionando pedido para:", childId);
+  // MARCAR COMO ORADO: Alterna o status do pedido no banco
+  const toggleRequestStatus = async (childId: string, requestId: string) => {
+    try {
+      const childRef = doc(db, "filhos", childId);
+      const child = children.find(c => c.id === childId);
+      if (!child) return;
+
+      const updatedRequests = child.individualRequests.map(req => 
+        req.id === requestId ? { ...req, isCompleted: !req.isCompleted } : req
+      );
+
+      await updateDoc(childRef, { individualRequests: updatedRequests });
+    } catch (e) {
+      console.error("Erro ao atualizar pedido:", e);
+    }
   };
 
-  const toggleRequestStatus = (childId: string, requestId: string) => {
-    console.log("Alternando status do pedido:", requestId);
+  // REGISTRAR TEMPO: Soma minutos de oração ao total do filho
+  const registerPrayerTime = async (childId: string, minutes: number) => {
+    try {
+      const childRef = doc(db, "filhos", childId);
+      const child = children.find(c => c.id === childId);
+      if (!child) return;
+
+      await updateDoc(childRef, {
+        prayerMinutes: (child.prayerMinutes || 0) + minutes
+      });
+    } catch (e) {
+      console.error("Erro ao registrar tempo:", e);
+    }
   };
 
-  const registerPrayerTime = (childId: string, minutes: number) => {
-    console.log("Registrando tempo de oração:", minutes);
+  const acceptChild = async (id: string) => {
+    try {
+      const childRef = doc(db, "filhos", id);
+      await updateDoc(childRef, { status: 'active' });
+    } catch (e) {
+      console.error("Erro ao aceitar filho:", e);
+    }
   };
 
   return { 

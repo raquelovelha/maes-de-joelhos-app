@@ -1,5 +1,3 @@
-
-// Responsabilidade: Orquestrador de Navegação e Injeção de Dependências. | Inputs: App State | Outputs: View Router.
 import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import HomeView from './views/Home';
@@ -12,29 +10,22 @@ import { SplashScreen } from './components/UI';
 import { useChildren } from './hooks/useChildren';
 import { usePrayers } from './hooks/usePrayers';
 import { INITIAL_PRAYER_REQUESTS } from './constants';
-import { UserStats, UserProfile, ChildOfPrayer } from './types';
+import { UserStats, UserProfile } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Mock inicial para demonstração
-  const initialChildren: ChildOfPrayer[] = [
-    {
-      id: 'mock-pending-1',
-      name: "Lucas (Novo do Site)",
-      type: 'geracao_compromisso',
-      birthDate: '2005-06-15',
-      location: 'Cadastro Web',
-      notes: 'Cadastrado via formulário online em 10/03',
-      startDate: new Date().toISOString(),
-      prayerMinutes: 0,
-      individualRequests: [],
-      status: 'pending_review'
-    }
-  ];
+  // Pegamos todas as funções reais do nosso Hook atualizado
+  const { 
+    children, 
+    acceptChild, 
+    addChild, 
+    addRequest, 
+    toggleRequestStatus, 
+    registerPrayerTime 
+  } = useChildren([]);
 
- const { children, acceptChild, addChild, addRequest, toggleRequestStatus, registerPrayerTime } = useChildren([]);
   const { prayers, toggleFavorite, togglePrayed, updateNote } = usePrayers(INITIAL_PRAYER_REQUESTS);
 
   const [stats, setStats] = useState<UserStats>({ streak: 3, totalMinutes: 245, totalDays: 12, hasDailyTrophy: false });
@@ -62,8 +53,8 @@ const App: React.FC = () => {
       children={children} 
       onAccept={acceptChild} 
       onAddChild={addChild} 
-      onAddRequest={addRequest} 
-      onToggleRequest={toggleRequestStatus} 
+      onAddRequest={addRequest} // Agora passa a função real!
+      onToggleRequest={toggleRequestStatus} // Agora passa a função real!
       onRegisterPrayer={registerPrayerTime} 
     />,
     community: <CommunityView />,
