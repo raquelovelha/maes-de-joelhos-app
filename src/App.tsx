@@ -34,7 +34,7 @@ const App: React.FC = () => {
     }
   ];
 
-  const { children, acceptChild, addChild, addRequest, toggleRequestStatus, registerPrayerTime } = useChildren(initialChildren);
+ const { children, acceptChild, addChild, addRequest, toggleRequestStatus, registerPrayerTime } = useChildren([]);
   const { prayers, toggleFavorite, togglePrayed, updateNote } = usePrayers(INITIAL_PRAYER_REQUESTS);
 
   const [stats, setStats] = useState<UserStats>({ streak: 3, totalMinutes: 245, totalDays: 12, hasDailyTrophy: false });

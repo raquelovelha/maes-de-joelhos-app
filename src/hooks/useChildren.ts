@@ -25,15 +25,20 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
   }, []);
 
   // O restante das funções permanece igual...
-  const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
+ const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
     try {
-      await addDoc(collection(db, "filhos"), {
+      // Adiciona o documento na coleção "filhos" que já existe no seu Firebase
+      const docRef = await addDoc(collection(db, "filhos"), {
         ...child,
-        status: 'pending_review',
-        startDate: new Date().toISOString()
+        status: 'active', // Mudamos para active para aparecer na hora
+        startDate: new Date().toISOString(),
+        prayerMinutes: 0
       });
+      console.log("Filho salvo com ID: ", docRef.id);
+      alert("Filho cadastrado com sucesso!");
     } catch (e) {
-      console.error("Erro ao salvar filho: ", e);
+      console.error("Erro detalhado ao salvar: ", e);
+      alert("Erro ao salvar no banco. Verifique o console.");
     }
   };
 
