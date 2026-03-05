@@ -7,20 +7,16 @@ import { PrayerRequest } from '../types';
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
-  // 1. CARREGAR DADOS
   useEffect(() => {
     const loadData = async () => {
       if (!userId) return;
-
       try {
         setLoading(true);
         const qSugestoes = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc"));
         const snapSugestoes = await getDocs(qSugestoes);
-        
         const userDocRef = doc(db, "user_progress", userId);
         const userDocSnap = await getDoc(userDocRef);
         const userProgress = userDocSnap.exists() ? userDocSnap.data().prayers : {};
@@ -29,7 +25,6 @@ export const usePrayers = () => {
           const data = docSnap.data();
           const dia = data.dia;
           const progress = userProgress[dia] || {};
-
           return {
             id: dia,
             categoria: data.categoria,
@@ -40,7 +35,6 @@ export const usePrayers = () => {
             personalNotes: progress.personalNotes || ''
           } as PrayerRequest;
         });
-
         setPrayers(combinedData);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -48,66 +42,40 @@ export const usePrayers = () => {
         setLoading(false);
       }
     };
-
     loadData();
   }, [userId]);
 
-  // 2. SALVAR PROGRESSO DAS ORAÇÕES
   const saveToFirebase = async (updatedPrayers: PrayerRequest[]) => {
     if (!userId) return;
     try {
       const userDocRef = doc(db, "user_progress", userId);
       const progressToSave = updatedPrayers.reduce((acc: any, p) => {
-        acc[p.id] = {
-          isPrayed: p.isPrayed,
-          isFavorite: p.isFavorite,
-          personalNotes: p.personalNotes
-        };
+        acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
         return acc;
       }, {});
-
       await setDoc(userDocRef, { prayers: progressToSave }, { merge: true });
-    } catch (e) {
-      console.error("Erro ao salvar progresso:", e);
-    }
+    } catch (e) { console.error("Erro ao salvar progresso:", e); }
   };
 
-  // 3. MARCAR COMO ORADO (Com atualização de contador no perfil)
   const togglePrayed = useCallback(async (id: number) => {
     let isMarkingAsDone = false;
 
     setPrayers(prev => {
       const prayerToUpdate = prev.find(p => p.id === id);
       isMarkingAsDone = prayerToUpdate ? !prayerToUpdate.isPrayed : false;
-
       const updated = prev.map(p => p.id === id ? { ...p, isPrayed: !p.isPrayed } : p);
-      
-      // Se completou o ciclo, reseta mas mantém os pontos ganhos
-      if (updated.length >= 101 && updated.every(p => p.isPrayed)) {
-        alert("Glória a Deus! Você completou o ciclo de orações.");
-        const reseted = updated.map(p => ({ ...p, isPrayed: false }));
-        saveToFirebase(reseted);
-        return reseted;
-      }
-      
       saveToFirebase(updated);
       return updated;
     });
 
-    // ATUALIZAÇÃO DO PERFIL: Se estiver marcando como feito, incrementa o contador global
     if (isMarkingAsDone && userId) {
       try {
         const userRef = doc(db, "usuarios", userId);
-        await updateDoc(userRef, {
-          pedidosConcluidos: increment(1)
-        });
-      } catch (error) {
-        console.error("Erro ao atualizar contador de pedidos:", error);
-      }
+        await updateDoc(userRef, { pedidosConcluidos: increment(1) });
+      } catch (e) { console.error("Erro ao atualizar contador:", e); }
     }
   }, [userId]);
 
-  // 4. FAVORITAR
   const toggleFavorite = useCallback((id: number) => {
     setPrayers(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p);
@@ -116,7 +84,6 @@ export const usePrayers = () => {
     });
   }, [userId]);
 
-  // 5. ATUALIZAR NOTA
   const updateNote = useCallback((id: number, note: string) => {
     setPrayers(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, personalNotes: note } : p);
