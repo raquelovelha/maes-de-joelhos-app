@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 // @ts-ignore
-import { collection, query, onSnapshot, addDoc, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, query, onSnapshot, addDoc, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { ChildOfPrayer, ChildPrayerRequest } from '../types';
 
 export const useChildren = (initialData: ChildOfPrayer[] = []) => {
   const [children, setChildren] = useState<ChildOfPrayer[]>(initialData);
 
-  // Monitora o banco de dados em tempo real
+  // 1. ESCUTA EM TEMPO REAL: Monitora mudanças no Firestore
   useEffect(() => {
     try {
       const q = query(collection(db, "filhos"));
@@ -26,7 +26,7 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   }, []);
 
-  // Cadastro de novo filho
+  // 2. ADICIONAR FILHO: Salva um novo registro
   const addChild = async (child: Omit<ChildOfPrayer, 'id'>) => {
     try {
       const childToSave = {
@@ -43,7 +43,7 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   };
 
-  // ADICIONAR PEDIDO: Grava um novo motivo de oração no Firebase
+  // 3. ADICIONAR PEDIDO: Grava um novo motivo de oração
   const addRequest = async (childId: string, text: string) => {
     try {
       const childRef = doc(db, "filhos", childId);
@@ -65,7 +65,7 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   };
 
-  // MARCAR COMO ORADO: Alterna o status do pedido no banco
+  // 4. MARCAR COMO ORADO: Alterna o status do pedido (check/uncheck)
   const toggleRequestStatus = async (childId: string, requestId: string) => {
     try {
       const childRef = doc(db, "filhos", childId);
@@ -82,7 +82,21 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   };
 
-  // REGISTRAR TEMPO: Soma minutos de oração ao total do filho
+  // 5. EXCLUIR FILHO: Remove permanentemente do Firebase
+  const deleteChild = async (childId: string) => {
+    if (window.confirm("Tem certeza que deseja excluir este cadastro? Esta ação não pode ser desfeita.")) {
+      try {
+        const childRef = doc(db, "filhos", childId);
+        await deleteDoc(childRef);
+        alert("Cadastro removido com sucesso!");
+      } catch (e) {
+        console.error("Erro ao excluir:", e);
+        alert("Erro ao excluir do banco de dados.");
+      }
+    }
+  };
+
+  // 6. REGISTRAR TEMPO: Acumula minutos de oração
   const registerPrayerTime = async (childId: string, minutes: number) => {
     try {
       const childRef = doc(db, "filhos", childId);
@@ -97,6 +111,7 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   };
 
+  // 7. ACEITAR FILHO: Altera status de pendente para ativo
   const acceptChild = async (id: string) => {
     try {
       const childRef = doc(db, "filhos", id);
@@ -106,12 +121,14 @@ export const useChildren = (initialData: ChildOfPrayer[] = []) => {
     }
   };
 
+  // RETORNO: Exporta tudo para ser usado nos componentes
   return { 
     children, 
     addChild, 
     acceptChild, 
     addRequest, 
     toggleRequestStatus, 
-    registerPrayerTime 
+    registerPrayerTime,
+    deleteChild // Função de exclusão disponível agora!
   };
 };

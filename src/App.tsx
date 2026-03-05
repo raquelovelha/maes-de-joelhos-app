@@ -16,18 +16,16 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
   
-  // Pegamos todas as funções reais do nosso Hook atualizado
   const { 
     children, 
-    acceptChild, 
     addChild, 
+    deleteChild, // Pegando a função nova
     addRequest, 
     toggleRequestStatus, 
     registerPrayerTime 
   } = useChildren([]);
 
   const { prayers, toggleFavorite, togglePrayed, updateNote } = usePrayers(INITIAL_PRAYER_REQUESTS);
-
   const [stats, setStats] = useState<UserStats>({ streak: 3, totalMinutes: 245, totalDays: 12, hasDailyTrophy: false });
   const [profile, setProfile] = useState<UserProfile>({
     name: "Ana Cláudia",
@@ -42,8 +40,6 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const hasPendingChildren = children.some(c => c.status === 'pending_review');
-
   if (isLoading) return <SplashScreen />;
 
   const views: Record<string, React.ReactNode> = {
@@ -51,11 +47,12 @@ const App: React.FC = () => {
     prayers: <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} togglePrayed={togglePrayed} updateNote={updateNote} />,
     filhos: <FilhosView 
       children={children} 
-      onAccept={acceptChild} 
       onAddChild={addChild} 
-      onAddRequest={addRequest} // Agora passa a função real!
-      onToggleRequest={toggleRequestStatus} // Agora passa a função real!
+      onDeleteChild={deleteChild} // Passando para a tela
+      onAddRequest={addRequest} 
+      onToggleRequest={toggleRequestStatus} 
       onRegisterPrayer={registerPrayerTime} 
+      onAccept={() => {}} 
     />,
     community: <CommunityView />,
     timer: <TimerView stats={stats} setStats={setStats} onFinish={() => setActiveTab('home')} />,
@@ -63,7 +60,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} hasPending={hasPendingChildren}>
+    <Layout activeTab={activeTab} onTabChange={setActiveTab} hasPending={false}>
       {views[activeTab]}
     </Layout>
   );
