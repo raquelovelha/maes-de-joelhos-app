@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth'; 
-import { doc, getDoc } from 'firebase/firestore'; 
+import { doc, getDoc, onSnapshot } from 'firebase/firestore'; 
 import { db } from './firebase'; 
 
 // Providers e Componentes Globais
@@ -13,7 +13,7 @@ import HomeView from './views/Home';
 import PrayersView from './views/Prayers';
 import FilhosView from './views/Filhos';
 import CommunityView from './views/Community';
-import TimerView from './views/Timer';
+import Timer from './views/Timer'; // Nome ajustado para Timer.tsx
 import Profile from './views/Profile'; 
 import RegisterView from './views/Register'; 
 import { SplashScreen } from './components/UI';
@@ -28,7 +28,13 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null); 
   
-  const [stats, setStats] = useState<UserStats>({ streak: 0, totalMinutes: 0, totalDays: 0, hasDailyTrophy: false });
+  const [stats, setStats] = useState<UserStats>({ 
+    streak: 0, 
+    totalMinutes: 0, 
+    totalDays: 0, 
+    hasDailyTrophy: false 
+  });
+
   const [profile, setProfile] = useState<UserProfile>({
     name: "Missionária",
     birthDate: "",
@@ -37,26 +43,37 @@ const App: React.FC = () => {
     groupName: ""
   });
 
+  // Observador de Autenticação e Dados do Firestore em Tempo Real
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      
       if (currentUser) {
-        try {
-          const docRef = doc(db, "usuarios", currentUser.uid);
-          const docSnap = await getDoc(docRef);
+        // Usamos onSnapshot para que, quando o Timer salvar no banco, 
+        // o App.tsx e o Profile atualizem sozinhos na hora!
+        const docRef = doc(db, "usuarios", currentUser.uid);
+        const unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            setProfile(prev => ({ ...prev, name: data.nome, ...data }));
-            setStats(prev => ({ ...prev, totalMinutes: data.minutosIntercedidos || 0, streak: data.diasConsecutivos || 0 }));
+            setProfile(prev => ({ ...prev, nome: data.nome, ...data }));
+            setStats({
+              streak: data.diasConsecutivos || 0,
+              totalMinutes: data.minutosIntercedidos || 0,
+              totalDays: data.totalDias || 0,
+              hasDailyTrophy: data.ultimoDiaOrado === new Date().toISOString().split('T')[0]
+            });
           }
-        } catch (e) {
-          console.error("Erro ao buscar perfil:", e);
-        }
+          setIsLoading(false);
+        });
+
+        return () => unsubscribeDoc();
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false); 
     });
-    return () => unsubscribe();
+
+    return () => unsubscribeAuth();
   }, []);
 
   const { children, addChild, deleteChild, addRequest, toggleRequestStatus, registerPrayerTime } = useChildren([]);
@@ -78,16 +95,19 @@ const App: React.FC = () => {
       onAccept={() => {}} 
     />,
     community: <CommunityView />,
-    timer: <TimerView stats={stats} setStats={setStats} onFinish={() => setActiveTab('home')} />,
+    timer: <Timer stats={stats} setStats={setStats} onFinish={() => setActiveTab('home')} />,
     profile: <Profile profile={profile} stats={stats} setProfile={setProfile} />
   };
 
   return (
-    <TimerProvider> {/* Envolve todo o app para o tempo não resetar */}
+    <TimerProvider> 
       <div className="relative min-h-screen bg-[#FFF5F1]">
-        <GlobalTimer /> {/* Cronômetro flutuante visível em todas as telas */}
-        
-        <Layout activeTab={activeTab} onTabChange={setActiveTab} hasPending={false}>
+        <GlobalTimer /> 
+        <Layout 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          userProfile={profile} // Passa o perfil para as iniciais no header aparecerem
+        >
           {views[activeTab]}
         </Layout>
       </div>

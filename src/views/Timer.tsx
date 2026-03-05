@@ -1,105 +1,113 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
-import { UserStats } from '../types';
+import React from 'react';
+import { useTimer } from '../contexts/TimerContext';
+import { auth, db } from '../firebase';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
 interface TimerProps {
-  stats: UserStats;
-  setStats: React.Dispatch<React.SetStateAction<UserStats>>;
+  stats: any;
+  setStats: (stats: any) => void;
   onFinish: () => void;
 }
 
-const TimerView: React.FC<TimerProps> = ({ stats, setStats, onFinish }) => {
-  const [seconds, setSeconds] = useState(15 * 60); // 15 minutes
-  const [isActive, setIsActive] = useState(false);
+const Timer: React.FC<TimerProps> = ({ stats, setStats, onFinish }) => {
+  const { seconds, isActive, startTimer, pauseTimer, resetTimer, formattedTime } = useTimer();
 
-  useEffect(() => {
-    let interval: any = null;
-    if (isActive && seconds > 0) {
-      interval = setInterval(() => {
-        setSeconds(s => s - 1);
-      }, 1000);
-    } else if (seconds === 0) {
-      handleComplete();
+  const handleFinish = async () => {
+    const minutesEarned = Math.floor(seconds / 60);
+    
+    if (minutesEarned > 0 && auth.currentUser) {
+      try {
+        const userRef = doc(db, "usuarios", auth.currentUser.uid);
+        
+        // Grava permanentemente no Firebase
+        await updateDoc(userRef, {
+          minutosIntercedidos: increment(minutesEarned),
+          ultimoDiaOrado: new Date().toISOString().split('T')[0] 
+        });
+
+        // Atualiza o estado visual imediatamente
+        setStats({
+          ...stats,
+          totalMinutes: stats.totalMinutes + minutesEarned
+        });
+
+        alert(`Glória a Deus! ${minutesEarned} minutos registrados no seu perfil. 🙏`);
+      } catch (error) {
+        console.error("Erro ao salvar:", error);
+        alert("O tempo foi contado, mas houve um erro ao salvar no servidor.");
+      }
+    } else if (minutesEarned === 0) {
+      alert("O tempo mínimo para registro é de 1 minuto de oração.");
     }
-    return () => clearInterval(interval);
-  }, [isActive, seconds]);
 
-  const handleComplete = useCallback(() => {
-    setIsActive(false);
-    setStats(prev => ({
-      ...prev,
-      totalMinutes: prev.totalMinutes + 15,
-      hasDailyTrophy: true
-    }));
-    alert("Parabéns! Você concluiu seus 15 minutos de oração diária. Troféu liberado!");
-    onFinish();
-  }, [setStats, onFinish]);
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    resetTimer();
+    onFinish(); // Volta para a Home
   };
 
-  const progress = ((15 * 60 - seconds) / (15 * 60)) * 100;
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-[65vh] space-y-10 animate-fadeIn px-4">
-      <div className="text-center space-y-3">
-        <h2 className="serif-font text-3xl font-bold text-brand-dark">Momento com Deus</h2>
-        <p className="text-sm text-gray-500 font-medium italic">"15 minutos de oração que transformam o destino dos nossos filhos."</p>
+    <div className="flex flex-col items-center justify-center min-h-[70vh] space-y-8 animate-fadeIn">
+      <div className="text-center space-y-2">
+        <h2 className="serif-font text-3xl font-bold text-brand-dark">Tempo com Deus</h2>
+        <p className="text-brand-rose font-black uppercase tracking-widest text-[10px]">A oração de uma mãe move o céu</p>
       </div>
 
-      {/* Timer Circle */}
-      <div className="relative w-72 h-72 flex items-center justify-center">
-        <svg className="absolute w-full h-full -rotate-90">
-          <circle 
-            cx="144" cy="144" r="130" 
-            className="stroke-brand-soft fill-none" 
-            strokeWidth="12" 
+      {/* Círculo Progressivo */}
+      <div className="relative w-64 h-64 flex items-center justify-center">
+        <svg className="w-full h-full transform -rotate-90">
+          <circle
+            cx="128"
+            cy="128"
+            r="120"
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            className="text-orange-50"
           />
-          <circle 
-            cx="144" cy="144" r="130" 
-            className="stroke-brand-primary fill-none transition-all duration-1000" 
-            strokeWidth="12" 
-            strokeDasharray={816} 
-            strokeDashoffset={816 - (816 * progress) / 100}
-            strokeLinecap="round"
+          <circle
+            cx="128"
+            cy="128"
+            r="120"
+            stroke="currentColor"
+            strokeWidth="8"
+            fill="transparent"
+            strokeDasharray={754}
+            strokeDashoffset={754 - (754 * (seconds % 3600)) / 3600}
+            className="text-[#FF4500] transition-all duration-1000"
           />
         </svg>
-        <div className="text-center z-10">
-          <p className="text-6xl font-black text-brand-dark font-mono tracking-tighter">{formatTime(seconds)}</p>
-          <p className="text-[10px] uppercase font-black text-brand-primary mt-2 tracking-widest">A Clamar</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-5xl font-black text-brand-dark tabular-nums">{formattedTime}</span>
+          <span className="text-[10px] font-bold text-gray-400 uppercase mt-2">Em intercessão</span>
         </div>
       </div>
 
-      <div className="flex gap-4 w-full max-w-sm">
-        <button 
-          onClick={() => setIsActive(!isActive)}
-          className={`flex-[2] py-5 rounded-full text-white font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 ${isActive ? 'bg-brand-dark' : 'gradient-brand shadow-brand-primary/30'}`}
+      {/* Botões de Ação */}
+      <div className="flex gap-4 w-full max-w-xs">
+        <button
+          onClick={isActive ? pauseTimer : startTimer}
+          className={`flex-1 py-4 rounded-full font-black uppercase tracking-widest text-xs shadow-lg transition-all active:scale-95 ${
+            isActive ? 'bg-orange-100 text-[#FF4500]' : 'bg-[#FF4500] text-white'
+          }`}
         >
-          <i className={`fa-solid ${isActive ? 'fa-pause' : 'fa-play'}`}></i>
           {isActive ? 'Pausar' : 'Iniciar'}
         </button>
-        {seconds < 15 * 60 && (
-          <button 
-            onClick={() => {
-              if (window.confirm("Deseja encerrar agora? O tempo não será registrado.")) {
-                onFinish();
-              }
-            }}
-            className="flex-1 py-5 rounded-full bg-white border-2 border-brand-border text-gray-500 font-black uppercase tracking-widest text-[10px] active:scale-95"
-          >
-            Sair
-          </button>
-        )}
+        
+        <button
+          onClick={handleFinish}
+          className="flex-1 bg-brand-dark text-white py-4 rounded-full font-black uppercase tracking-widest text-xs shadow-lg active:scale-95"
+        >
+          Concluir
+        </button>
       </div>
 
-      <div className="calligraphy-font text-2xl text-brand-primary text-center">
-        "Mães de joelhos, filhos de pé!"
-      </div>
+      <button 
+        onClick={resetTimer}
+        className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] hover:text-[#FF4500] transition-colors"
+      >
+        Zerar Cronômetro
+      </button>
     </div>
   );
 };
 
-export default TimerView;
+export default Timer;

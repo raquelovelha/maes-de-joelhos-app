@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { INSTITUTIONAL } from '../constants';
 
@@ -7,12 +6,27 @@ interface LayoutProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   hasPending?: boolean;
+  // Adicionamos o perfil aqui para o Header saber o que mostrar
+  userProfile?: {
+    nome: string;
+    fotoUrl?: string;
+  };
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPending }) => {
+const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPending, userProfile }) => {
+  
+  // Função para gerar as iniciais (Ex: "Raquel Guerreiro" -> "RG")
+  const getInitials = (name: string) => {
+    if (!name) return 'M';
+    const names = name.trim().split(' ');
+    return names.length > 1 
+      ? (names[0][0] + names[names.length - 1][0]).toUpperCase() 
+      : names[0][0].toUpperCase();
+  };
+
   return (
     <div className="flex flex-col min-h-screen pb-24">
-      {/* Header - Alterado para fundo Lavanda Suave / Rosa para um toque mais feminino e espiritual */}
+      {/* Header - Com suporte a iniciais dinâmicas */}
       <header className="bg-brand-lavender/80 px-6 py-3 sticky top-0 z-40 border-b border-brand-rose/20 shadow-sm backdrop-blur-xl">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-3">
@@ -32,11 +46,21 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPe
               </span>
             </div>
           </div>
+
+          {/* Botão de Perfil: Agora com iniciais e gradiente */}
           <button 
             onClick={() => onTabChange('profile')} 
-            className="w-10 h-10 rounded-2xl border-2 border-brand-rose/30 p-0.5 overflow-hidden active:scale-95 transition-transform bg-white shadow-sm"
+            className="w-10 h-10 rounded-2xl border-2 border-brand-rose/30 overflow-hidden active:scale-95 transition-transform bg-white shadow-sm flex items-center justify-center"
           >
-            <img src="https://picsum.photos/seed/debora/100" alt="Profile" className="w-full h-full object-cover rounded-xl" />
+            {userProfile?.fotoUrl ? (
+              <img src={userProfile.fotoUrl} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-[#FF4500] to-[#FF8C00] flex items-center justify-center">
+                <span className="text-[13px] font-black text-white tracking-tighter">
+                  {getInitials(userProfile?.nome || 'Missionária')}
+                </span>
+              </div>
+            )}
           </button>
         </div>
       </header>
