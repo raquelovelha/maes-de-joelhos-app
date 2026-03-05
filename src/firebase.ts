@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth'; // Adicione isso para o Login funcionar
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBmpyvlLrK3SQBQpUWVizbI09WKo--k5Ro",
@@ -11,9 +11,9 @@ const firebaseConfig = {
   appId: "1:905186440856:web:37c4a455e2223dfbaa82ed"
 };
 
-// Inicializa o Firebase
+// Inicializa o Firebase (O "Coração" do App)
 const app = initializeApp(firebaseConfig);
 
-// Exporta as instâncias para o restante do app
+// Exporta as ferramentas para o restante do projeto
 export const db = getFirestore(app);
-export const auth = getAuth(app); // Importante: exporte o auth aqui
+export const auth = getAuth(app); // <--- ESSA LINHA É A MAIS IMPORTANTE!

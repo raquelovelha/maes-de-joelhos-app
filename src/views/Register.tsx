@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../firebase'; 
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase'; 
 
 const RegisterView: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -11,7 +11,12 @@ const RegisterView: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault(); // Previne o recarregamento da página
+    e.preventDefault();
+    
+    if (!auth) {
+      alert("Erro técnico: O sistema de autenticação ainda não carregou. Tente atualizar a página.");
+      return;
+    }
 
     if (!email || !password || !nomeMae) {
       alert("Por favor, preencha todos os campos.");
@@ -19,24 +24,19 @@ const RegisterView: React.FC = () => {
     }
 
     setLoading(true);
-    const auth = getAuth();
-    
     try {
-      // 1. Cria o usuário no Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Salva os dados na coleção 'usuarios'
       await setDoc(doc(db, "usuarios", user.uid), {
         uid: user.uid,
         nome: nomeMae,
         email: email,
-        filhos: nomesFilhos.split(',').map(n => n.trim()).filter(n => n !== ""), 
+        filhos: nomesFilhos.split(',').map(n => n.trim()).filter(n => n !== ""),
         dataCadastro: new Date().toISOString(),
       });
 
       alert("Bem-vinda! Cadastro realizado com sucesso.");
-      // O App.tsx detectará o login automaticamente via onAuthStateChanged
     } catch (error: any) {
       console.error(error);
       alert("Erro no cadastro: Verifique os dados ou se o e-mail já existe.");
@@ -46,75 +46,40 @@ const RegisterView: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-brand-soft flex flex-col items-center justify-center p-6 animate-fadeIn">
-      <div className="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-xl border border-brand-border">
-        <div className="text-center mb-8">
-          <h1 className="serif-font text-3xl font-bold text-brand-primary mb-2">Mães de Joelhos</h1>
-          <p className="text-sm text-gray-500 font-medium italic">
-            Crie sua conta para iniciar a jornada de 101 dias
+    <div className="min-h-screen bg-[#FFF5F1] flex flex-col items-center justify-center p-4 font-sans">
+      <div className="w-full max-w-sm bg-white rounded-[3rem] p-8 shadow-2xl border border-orange-50 flex flex-col items-center text-center">
+        
+        {/* Logo Desperta Débora - Tamanho Ajustado */}
+        <div className="mb-4">
+          <img 
+            src="https://despertadebora.com.br/wp-content/uploads/2023/05/logo-desperta-debora.png" 
+            alt="Desperta Débora" 
+            className="h-20 w-auto object-contain"
+          />
+        </div>
+
+        <div className="mb-6">
+          <h1 className="text-2xl font-black text-[#FF4500] leading-none mb-1">Mães de Joelhos</h1>
+          <p className="text-[#FF4500] font-bold italic text-sm mb-4">filhos de pé</p>
+          <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest px-2">
+            Crie sua conta para se tornar uma Débora e mãe de oração
           </p>
         </div>
         
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Seu Nome</label>
+        <form onSubmit={handleRegister} className="w-full space-y-3">
+          <div className="text-left">
+            <label className="text-[9px] font-black text-pink-400 uppercase ml-4 mb-1 block tracking-widest">Seu Nome</label>
             <input 
               type="text"
-              placeholder="Ex: Maria Silva" 
-              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
-              value={nomeMae}
+              placeholder="Ex: Raquel Guerreiro" 
+              className="w-full bg-[#FFF5F1] border border-orange-100 rounded-full px-5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-200 transition-all shadow-sm"
               onChange={(e) => setNomeMae(e.target.value)}
             />
           </div>
           
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">E-mail</label>
+          <div className="text-left">
+            <label className="text-[9px] font-black text-pink-400 uppercase ml-4 mb-1 block tracking-widest">E-mail</label>
             <input 
               type="email" 
-              placeholder="seu@email.com" 
-              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Senha</label>
-            <input 
-              type="password" 
-              placeholder="••••••••" 
-              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Nomes dos filhos</label>
-            <input 
-              type="text" 
-              placeholder="João, Maria (separados por vírgula)" 
-              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
-              value={nomesFilhos}
-              onChange={(e) => setNomesFilhos(e.target.value)}
-            />
-          </div>
-
-          <button 
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-brand-primary text-white font-black py-4 rounded-full mt-6 shadow-lg shadow-brand-primary/20 transition-all active:scale-95 ${loading ? 'opacity-50' : 'hover:bg-brand-dark'}`}
-          >
-            {loading ? 'CADASTRANDO...' : 'CADASTRAR AGORA'}
-          </button>
-        </form>
-
-        <p className="text-center mt-8 text-[11px] text-gray-400 font-medium">
-          Ao se cadastrar, você concorda em iniciar sua <br/> jornada de intercessão diária.
-        </p>
-      </div>
-    </div>
-  );
-};
-
-export default RegisterView;
+              placeholder="exemplo@gmail.com"
+              className
