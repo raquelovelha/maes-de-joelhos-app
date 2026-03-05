@@ -1,111 +1,179 @@
-import React, { useState } from 'react';
-import { getAuth, signOut } from 'firebase/auth'; 
-import { UserProfile, UserStats } from '../types';
-import { ActionButton, ProgressBar, InstitutionalFooter } from '../components/UI';
-import { formatCPF } from '../utils/helpers';
+import React, { useState, useEffect } from 'react';
+import { auth, db } from '../firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ActionButton } from '../components/UI';
 
-interface ProfileProps {
-  profile: UserProfile;
-  stats: UserStats;
-  setProfile?: React.Dispatch<React.SetStateAction<UserProfile>>;
-}
+const ProfileView: React.FC = () => {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState({
+    nome: '',
+    email: '',
+    fotoUrl: '',
+    cidade: '',
+    estado: '',
+    dataNascimento: '',
+    igreja: '',
+    grupoDeboras: '',
+    filhosAdotados: 0,
+    minutosIntercedidos: 0,
+    diasConsecutivos: 0
+  });
 
-// Alterado de ProfileView para Profile
-const Profile: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => {
-  const [cpfInput, setCpfInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  
-  const isVerified = profile.name === "Ricardo Oliveira";
-
-  const handleLogout = async () => {
-    const auth = getAuth();
-    try {
-      if (window.confirm("Deseja realmente sair da conta?")) {
-        await signOut(auth);
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (auth.currentUser) {
+        const docRef = doc(db, "usuarios", auth.currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setProfile(prev => ({ ...prev, ...docSnap.data() }));
+        }
+        setLoading(false);
       }
+    };
+    loadProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!auth.currentUser) return;
+    setSaving(true);
+    try {
+      const userRef = doc(db, "usuarios", auth.currentUser.uid);
+      await updateDoc(userRef, profile);
+      alert("Perfil atualizado com sucesso! 🙏");
     } catch (error) {
-      console.error("Erro ao sair:", error);
+      alert("Erro ao salvar perfil.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleConsultar = () => {
-    if (cpfInput === '123.456.789-00') {
-      setProfile?.({
-        name: "Ricardo Oliveira",
-        photo: "https://picsum.photos/seed/ricardo/400",
-        birthDate: "1980-01-15",
-        church: "Ministério de Finanças Cristãs",
-        participationTime: "5 anos",
-        groupName: "Homens de Fé - Finanças"
-      });
-      setErrorMsg('');
-    } else {
-      setErrorMsg("Cadastro não encontrado.");
-    }
-  };
+  if (loading) return <div className="p-20 text-center text-[#FF4500] font-bold">Carregando...</div>;
 
   return (
-    <div className="space-y-8 pb-24 animate-fadeIn">
-      <div className="bg-white p-6 rounded-[2.5rem] border border-brand-border shadow-sm space-y-4">
-        <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest block ml-4">Validação Oficial (CPF)</label>
-        <div className="flex gap-2">
-          <input 
-            type="tel" 
-            placeholder="000.000.000-00" 
-            value={cpfInput} 
-            onChange={(e) => setCpfInput(formatCPF(e.target.value))}
-            className="flex-1 bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm font-bold focus:ring-2 focus:ring-brand-rose/20 outline-none"
-          />
-          <button onClick={handleConsultar} className="bg-brand-rose text-white px-6 rounded-full text-[10px] font-black uppercase">Validar</button>
-        </div>
-        {errorMsg && (
-          <p className="text-[9px] text-red-500 font-bold ml-4">
-            {errorMsg} 
-            <a href="https://mpc.transforme.tech/captura/voluntario/cadastrodeboras" target="_blank" rel="noreferrer" className="underline ml-1">Cadastrar</a>
-          </p>
-        )}
-      </div>
-
-      <div className="flex flex-col items-center text-center space-y-4">
-        <div className="w-24 h-24 rounded-full border-4 border-brand-primary p-1 shadow-lg overflow-hidden">
-          <img 
-            src={profile.photo || "https://picsum.photos/seed/profile/400"} 
-            className="w-full h-full object-cover rounded-full" 
-            alt="User" 
-          />
-        </div>
-        <div>
-          <h2 className="serif-font text-2xl font-bold text-brand-dark">{profile.name}</h2>
-          {isVerified && (
-            <span className="bg-green-600 text-white text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest inline-flex items-center gap-2 mt-2 shadow-sm animate-fadeIn">
-              <i className="fa-solid fa-circle-check"></i> Débora Cadastrada
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-brand-soft rounded-[2.5rem] p-8 border border-brand-border space-y-6">
-        <ProgressBar label="Dias Consecutivos" value={stats.streak} max={30} color="bg-orange-500" />
-        <ProgressBar label="Minutos Intercedidos" value={stats.totalMinutes} max={1000} color="bg-brand-primary" />
-      </div>
-
-      <div className="space-y-2">
-        <ActionButton label="Privacidade" onClick={() => {}} variant="outline" fullWidth icon="fa-shield-halved" />
+    <div className="space-y-6 animate-fadeIn pb-24 px-2">
+      {/* CABEÇALHO DO PERFIL COM FOTO */}
+      <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-brand-border flex flex-col items-center text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-r from-orange-100 to-pink-100 opacity-50"></div>
         
-        <ActionButton 
-          label="Sair da Conta" 
-          onClick={handleLogout} 
-          variant="outline" 
-          fullWidth 
-          icon="fa-right-from-bracket" 
-          className="text-red-400 border-red-100" 
-        />
+        <div className="relative mt-4">
+          <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-brand-soft flex items-center justify-center">
+            {profile.fotoUrl ? (
+              <img src={profile.fotoUrl} alt="Perfil" className="w-full h-full object-cover" />
+            ) : (
+              <i className="fa-solid fa-user text-4xl text-brand-primary/20"></i>
+            )}
+          </div>
+          <button className="absolute bottom-1 right-1 bg-[#FF4500] text-white w-8 h-8 rounded-full border-2 border-white flex items-center justify-center shadow-md">
+            <i className="fa-solid fa-camera text-xs"></i>
+          </button>
+        </div>
+
+        <h2 className="serif-font text-2xl font-bold text-brand-dark mt-4">{profile.nome || 'Missionária'}</h2>
+        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{profile.grupoDeboras || 'Débora de Oração'}</p>
+
+        {/* STATS CUSTOMIZADOS */}
+        <div className="grid grid-cols-2 gap-4 w-full mt-8">
+          <div className="bg-orange-50 p-4 rounded-3xl border border-orange-100">
+            <p className="text-[10px] font-black text-[#FF4500] uppercase">Dias Seguidos</p>
+            <p className="text-2xl font-black text-[#FF4500]">{profile.diasConsecutivos} 🔥</p>
+          </div>
+          <div className="bg-pink-50 p-4 rounded-3xl border border-pink-100">
+            <p className="text-[10px] font-black text-brand-rose uppercase">Minutos Oração</p>
+            <p className="text-2xl font-black text-brand-rose">{profile.minutosIntercedidos}</p>
+          </div>
+        </div>
       </div>
 
-      <InstitutionalFooter />
+      {/* FORMULÁRIO DE DADOS */}
+      <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-brand-border space-y-5">
+        <h3 className="serif-font text-xl font-bold text-brand-dark mb-4">Meus Dados</h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Nascimento</label>
+            <input 
+              type="date" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-5 py-3 text-xs font-bold outline-none"
+              value={profile.dataNascimento}
+              onChange={(e) => setProfile({...profile, dataNascimento: e.target.value})}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Filhos Adotados</label>
+            <input 
+              type="number" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-5 py-3 text-xs font-bold outline-none"
+              value={profile.filhosAdotados}
+              onChange={(e) => setProfile({...profile, filhosAdotados: parseInt(e.target.value) || 0})}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Igreja que frequenta</label>
+          <input 
+            type="text" 
+            placeholder="Ex: Igreja Batista Central"
+            className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none"
+            value={profile.igreja}
+            onChange={(e) => setProfile({...profile, igreja: e.target.value})}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Cidade</label>
+            <input 
+              type="text" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none"
+              value={profile.cidade}
+              onChange={(e) => setProfile({...profile, cidade: e.target.value})}
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Estado (UF)</label>
+            <input 
+              type="text" 
+              maxLength={2}
+              placeholder="Ex: MG"
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none text-center font-bold"
+              value={profile.estado}
+              onChange={(e) => setProfile({...profile, estado: e.target.value.toUpperCase()})}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Grupo de Déboras (Opcional)</label>
+          <input 
+            type="text" 
+            placeholder="Nome do seu grupo de intercessão"
+            className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none"
+            value={profile.grupoDeboras}
+            onChange={(e) => setProfile({...profile, grupoDeboras: e.target.value})}
+          />
+        </div>
+
+        <div className="pt-4">
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-[#FF4500] text-white font-black py-4 rounded-full shadow-lg active:scale-95 transition-all text-sm uppercase tracking-widest disabled:opacity-50"
+          >
+            {saving ? 'SALVANDO...' : 'ATUALIZAR PERFIL'}
+          </button>
+        </div>
+      </div>
+
+      <button 
+        onClick={() => auth.signOut()}
+        className="w-full text-gray-400 font-bold text-xs uppercase tracking-widest py-4"
+      >
+        <i className="fa-solid fa-right-from-bracket mr-2"></i> Sair do Aplicativo
+      </button>
     </div>
   );
 };
 
-// Alterado para Profile
-export default Profile;
+export default ProfileView;
