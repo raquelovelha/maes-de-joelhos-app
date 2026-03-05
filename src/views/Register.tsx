@@ -1,21 +1,24 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Alert, ScrollView } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase'; 
 
-const Register = ({ navigation }: any) => {
+const RegisterView: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nomeMae, setNomeMae] = useState('');
   const [nomesFilhos, setNomesFilhos] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault(); // Previne o recarregamento da página
+
     if (!email || !password || !nomeMae) {
-      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      alert("Por favor, preencha todos os campos.");
       return;
     }
 
+    setLoading(true);
     const auth = getAuth();
     
     try {
@@ -32,60 +35,86 @@ const Register = ({ navigation }: any) => {
         dataCadastro: new Date().toISOString(),
       });
 
-      Alert.alert("Bem-vinda!", "Cadastro realizado com sucesso.");
-      // Se tiver navegação: navigation.navigate('Home');
+      alert("Bem-vinda! Cadastro realizado com sucesso.");
+      // O App.tsx detectará o login automaticamente via onAuthStateChanged
     } catch (error: any) {
       console.error(error);
-      Alert.alert("Erro no cadastro", "Verifique os dados ou se o e-mail já existe.");
+      alert("Erro no cadastro: Verifique os dados ou se o e-mail já existe.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Mães de Joelhos</Text>
-      <Text style={styles.subtitle}>Crie sua conta para iniciar a jornada de 101 dias</Text>
-      
-      <TextInput 
-        placeholder="Seu Nome" 
-        style={styles.input} 
-        onChangeText={setNomeMae} 
-      />
-      
-      <TextInput 
-        placeholder="E-mail" 
-        style={styles.input} 
-        onChangeText={setEmail} 
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      
-      <TextInput 
-        placeholder="Senha" 
-        style={styles.input} 
-        onChangeText={setPassword} 
-        secureTextEntry 
-      />
+    <div className="min-h-screen bg-brand-soft flex flex-col items-center justify-center p-6 animate-fadeIn">
+      <div className="w-full max-w-md bg-white rounded-[3rem] p-10 shadow-xl border border-brand-border">
+        <div className="text-center mb-8">
+          <h1 className="serif-font text-3xl font-bold text-brand-primary mb-2">Mães de Joelhos</h1>
+          <p className="text-sm text-gray-500 font-medium italic">
+            Crie sua conta para iniciar a jornada de 101 dias
+          </p>
+        </div>
+        
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Seu Nome</label>
+            <input 
+              type="text"
+              placeholder="Ex: Maria Silva" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
+              value={nomeMae}
+              onChange={(e) => setNomeMae(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">E-mail</label>
+            <input 
+              type="email" 
+              placeholder="seu@email.com" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Senha</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
 
-      <TextInput 
-        placeholder="Nomes dos filhos (ex: João, Maria)" 
-        style={styles.input} 
-        onChangeText={setNomesFilhos} 
-      />
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Nomes dos filhos</label>
+            <input 
+              type="text" 
+              placeholder="João, Maria (separados por vírgula)" 
+              className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
+              value={nomesFilhos}
+              onChange={(e) => setNomesFilhos(e.target.value)}
+            />
+          </div>
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Cadastrar</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          <button 
+            type="submit"
+            disabled={loading}
+            className={`w-full bg-brand-primary text-white font-black py-4 rounded-full mt-6 shadow-lg shadow-brand-primary/20 transition-all active:scale-95 ${loading ? 'opacity-50' : 'hover:bg-brand-dark'}`}
+          >
+            {loading ? 'CADASTRANDO...' : 'CADASTRAR AGORA'}
+          </button>
+        </form>
+
+        <p className="text-center mt-8 text-[11px] text-gray-400 font-medium">
+          Ao se cadastrar, você concorda em iniciar sua <br/> jornada de intercessão diária.
+        </p>
+      </div>
+    </div>
   );
 };
 
-const styles = StyleSheet.create({
-  container: { padding: 30, flexGrow: 1, justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: 'bold', color: '#6200ee', textAlign: 'center' },
-  subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 30 },
-  input: { backgroundColor: '#f9f9f9', padding: 15, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#eee' },
-  button: { backgroundColor: '#6200ee', padding: 18, borderRadius: 10, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
-});
-
-export default Register;
+export default RegisterView;

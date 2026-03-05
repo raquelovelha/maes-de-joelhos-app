@@ -1,89 +1,139 @@
 import React, { useState } from 'react';
-import { ChildOfPrayer } from '../types';
-import { BaseModal, ActionButton, InstitutionalFooter } from '../components/UI';
-import { calculateAge, formatPhone } from '../utils/helpers';
+import { Child } from '../types';
+import { ActionButton, ProgressBar } from '../components/UI';
 
 interface FilhosProps {
-  children: ChildOfPrayer[];
-  onAddChild: (child: Omit<ChildOfPrayer, 'id'>) => void;
+  children: Child[];
+  onAddChild: (child: Omit<Child, 'id' | 'requests'>) => void;
   onDeleteChild: (id: string) => void;
-  onAddRequest: (childId: string, text: string) => void;
+  onAddRequest: (childId: string, title: string) => void;
   onToggleRequest: (childId: string, requestId: string) => void;
   onRegisterPrayer: (childId: string, minutes: number) => void;
-  onAccept: (id: string) => void;
+  onAccept: () => void;
 }
 
 const FilhosView: React.FC<FilhosProps> = ({ 
-  children, onAddChild, onDeleteChild, onAddRequest, onToggleRequest 
+  children, 
+  onAddChild, 
+  onDeleteChild 
 }) => {
-  const [modals, setModals] = useState({ add: false, details: false });
-  const [selectedChild, setSelectedChild] = useState<ChildOfPrayer | null>(null);
-  const [newRequestText, setNewRequestText] = useState('');
-  const [formData, setFormData] = useState({ name: '', type: 'biologico' as any, birthDate: '', whatsapp: '' });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newChild, setNewChild] = useState({
+    name: '',
+    birthDate: '',
+    type: 'Biológico' as 'Biológico' | 'Adotivo' | 'Espiritual'
+  });
 
-  const handleOpenDetails = (child: ChildOfPrayer) => {
-    setSelectedChild(child);
-    setModals(prev => ({ ...prev, details: true }));
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newChild.name && newChild.birthDate) {
+      onAddChild(newChild);
+      setNewChild({ name: '', birthDate: '', type: 'Biológico' });
+      setShowAddModal(false);
+    }
   };
 
   return (
-    <div className="space-y-6 pb-40 animate-fadeIn p-4"> 
-      <header className="flex items-center justify-between">
-        <h2 className="serif-font text-2xl font-bold text-brand-dark">Filhos de Oração</h2>
-        <button onClick={() => setModals({...modals, add: true})} className="bg-brand-gc text-white w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center">
-          <i className="fa-solid fa-plus text-xl"></i>
+    <div className="space-y-6 animate-fadeIn pb-20">
+      <div className="flex items-center justify-between">
+        <h2 className="serif-font text-2xl font-bold text-brand-dark">Meus Filhos</h2>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-brand-primary text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
+        >
+          <i className="fa-solid fa-plus"></i>
         </button>
-      </header>
-
-      <div className="grid grid-cols-1 gap-4">
-        {children.map(child => (
-          <div key={child.id} onClick={() => handleOpenDetails(child)} className="bg-white rounded-3xl p-4 border border-brand-border shadow-sm flex gap-4 cursor-pointer">
-            <img src={`https://picsum.photos/seed/${child.id}/200`} className="w-16 h-16 rounded-2xl object-cover border" alt="" />
-            <div className="flex-1 text-left">
-              <h3 className="font-bold text-brand-dark">{child.name}</h3>
-              <p className="text-[11px] text-gray-500">{calculateAge(child.birthDate)} anos • {child.type}</p>
-            </div>
-          </div>
-        ))}
       </div>
 
-      <BaseModal isOpen={modals.details} onClose={() => setModals({...modals, details: false})} title={selectedChild?.name || ''}>
-        <div className="space-y-6">
-          <div className="flex gap-2">
-            <input type="text" placeholder="Novo pedido..." className="flex-1 p-3 bg-gray-50 rounded-xl border text-sm" value={newRequestText} onChange={e => setNewRequestText(e.target.value)} />
-            <button onClick={() => { onAddRequest(selectedChild!.id, newRequestText); setNewRequestText(''); }} className="bg-brand-primary text-white px-4 rounded-xl">
-              <i className="fa-solid fa-paper-plane"></i>
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {selectedChild?.individualRequests?.map((req: any) => (
-              <div key={req.id} onClick={() => onToggleRequest(selectedChild!.id, req.id)} className={`p-3 rounded-2xl border flex items-center gap-3 ${req.isCompleted ? 'bg-green-50 opacity-60' : 'bg-white'}`}>
-                <i className={`fa-solid ${req.isCompleted ? 'fa-circle-check text-green-500' : 'fa-circle text-gray-200'}`}></i>
-                <span className={`text-sm ${req.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}>{req.text}</span>
+      <div className="grid gap-4">
+        {children.length > 0 ? (
+          children.map((child) => (
+            <div key={child.id} className="bg-white rounded-[2rem] p-6 border border-brand-border shadow-sm relative overflow-hidden">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <span className="text-[10px] font-black text-brand-rose uppercase tracking-widest bg-brand-pink/30 px-3 py-1 rounded-full mb-2 inline-block">
+                    {child.type}
+                  </span>
+                  <h3 className="serif-font text-xl font-bold text-brand-dark">{child.name}</h3>
+                </div>
+                <button 
+                  onClick={() => onDeleteChild(child.id)}
+                  className="text-gray-300 hover:text-red-500 transition-colors p-2"
+                >
+                  <i className="fa-solid fa-trash-can"></i>
+                </button>
               </div>
-            ))}
+              
+              <div className="space-y-3">
+                <ProgressBar label="Jornada de Oração" value={12} max={101} color="bg-brand-primary" />
+                <p className="text-[10px] text-gray-400 font-medium italic">Nascimento: {new Date(child.birthDate).toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-12 bg-brand-soft rounded-[2rem] border-2 border-dashed border-brand-border">
+            <i className="fa-solid fa-children text-4xl text-brand-primary/20 mb-3"></i>
+            <p className="text-sm text-gray-500 font-medium">Nenhum filho cadastrado ainda.</p>
           </div>
+        )}
+      </div>
 
-          <div className="pt-6 border-t border-gray-100 mt-4">
-            <button 
-              onClick={() => { onDeleteChild(selectedChild!.id); setModals({...modals, details: false}); }}
-              className="w-full py-3 text-red-500 font-bold text-[10px] uppercase bg-red-50 rounded-xl flex items-center justify-center gap-2"
-            >
-              <i className="fa-solid fa-trash-can"></i> Excluir Cadastro
-            </button>
+      {/* MODAL DE CADASTRO */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="bg-white w-full max-w-md rounded-t-[3rem] p-8 animate-slideUp">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="serif-font text-2xl font-bold text-brand-dark">Novo Filho(a)</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400"><i className="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Nome Completo</label>
+                <input 
+                  type="text" 
+                  required
+                  className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
+                  value={newChild.name}
+                  onChange={(e) => setNewChild({...newChild, name: e.target.value})}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Data de Nascimento</label>
+                <input 
+                  type="date" 
+                  required
+                  className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-primary/20"
+                  value={newChild.birthDate}
+                  onChange={(e) => setNewChild({...newChild, birthDate: e.target.value})}
+                />
+              </div>
+
+              {/* CAMPO DE TIPO DE FILIAÇÃO RESTAURADO */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Tipo de Filiação</label>
+                <div className="relative">
+                  <select 
+                    className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm font-bold outline-none appearance-none focus:ring-2 focus:ring-brand-primary/20"
+                    value={newChild.type}
+                    onChange={(e) => setNewChild({...newChild, type: e.target.value as any})}
+                  >
+                    <option value="Biológico">Biológico</option>
+                    <option value="Adotivo">Adotivo</option>
+                    <option value="Espiritual">Espiritual</option>
+                  </select>
+                  <i className="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-brand-rose pointer-events-none"></i>
+                </div>
+              </div>
+
+              <div className="pt-4">
+                <ActionButton label="Cadastrar Filho" onClick={() => {}} fullWidth variant="primary" />
+              </div>
+            </form>
           </div>
         </div>
-      </BaseModal>
-
-      <BaseModal isOpen={modals.add} onClose={() => setModals({...modals, add: false})} title="Novo Filho">
-        <div className="space-y-4">
-          <input type="text" placeholder="Nome" className="w-full p-4 bg-gray-50 rounded-2xl border" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-          <input type="date" className="w-full p-4 bg-gray-50 rounded-2xl border" value={formData.birthDate} onChange={e => setFormData({...formData, birthDate: e.target.value})} />
-          <ActionButton label="Salvar" onClick={() => { onAddChild(formData); setModals({...modals, add: false}); }} fullwidth />
-        </div>
-      </BaseModal>
-      <InstitutionalFooter />
+      )}
     </div>
   );
 };
