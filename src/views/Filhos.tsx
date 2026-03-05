@@ -1,179 +1,150 @@
 import React, { useState } from 'react';
-import { Child } from '../types';
-import { ActionButton, ProgressBar } from '../components/UI';
+import { auth, db } from '../firebase';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 
-interface FilhosProps {
-  children: Child[];
-  onAddChild: (child: Omit<Child, 'id' | 'requests'>) => void;
-  onDeleteChild: (id: string) => void;
-  onAddRequest: (childId: string, title: string) => void;
-  onToggleRequest: (childId: string, requestId: string) => void;
-  onRegisterPrayer: (childId: string, minutes: number) => void;
-  onAccept: () => void;
+interface Pedido {
+  id: string;
+  texto: string;
+  resposta?: string;
+  data: string;
+  concluido: boolean;
 }
 
-const FilhosView: React.FC<FilhosProps> = ({ 
-  children, 
-  onAddChild, 
-  onDeleteChild 
-}) => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newChild, setNewChild] = useState({
-    name: '',
-    birthDate: '',
-    type: 'Biológico' as 'Biológico' | 'Adotivo' | 'Espiritual'
-  });
+interface Filho {
+  id: string;
+  nome: string;
+  pedidos: Pedido[];
+}
 
-  // Função para definir a cor baseada no tipo de filiação
-  const getTypeStyles = (type: string) => {
-    switch (type) {
-      case 'Adotivo': return 'text-blue-600 bg-blue-50 border-blue-100';
-      case 'Espiritual': return 'text-purple-600 bg-purple-50 border-purple-100';
-      default: return 'text-brand-rose bg-brand-pink/30 border-brand-rose/20';
+const FilhosView: React.FC = () => {
+  // Estado inicial com Lara e Liz (isso idealmente viria do Firebase)
+  const [filhos, setFilhos] = useState<Filho[]>([
+    { id: '1', nome: 'Lara', pedidos: [] },
+    { id: '2', nome: 'Liz', pedidos: [] }
+  ]);
+
+  const [novoPedido, setNovoPedido] = useState('');
+  const [filhoSelecionado, setFilhoSelecionado] = useState<string | null>(null);
+
+  // Função para adicionar novo pedido
+  const adicionarPedido = async (filhoId: string) => {
+    if (!novoPedido.trim()) return;
+
+    const pedidoObj: Pedido = {
+      id: Date.now().toString(),
+      texto: novoPedido,
+      data: new Date().toLocaleDateString('pt-BR'),
+      concluido: false
+    };
+
+    // Atualiza localmente
+    setFilhos(prev => prev.map(f => 
+      f.id === filhoId ? { ...f, pedidos: [pedidoObj, ...f.pedidos] } : f
+    ));
+
+    // Salva no Firebase (ajuste conforme sua estrutura de coleção)
+    if (auth.currentUser) {
+      try {
+        const userRef = doc(db, "usuarios", auth.currentUser.uid);
+        await updateDoc(userRef, {
+          [`pedidos_filhos.${filhoId}`]: arrayUnion(pedidoObj)
+        });
+      } catch (e) { console.error(e); }
     }
+
+    setNovoPedido('');
+    setFilhoSelecionado(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newChild.name && newChild.birthDate) {
-      onAddChild(newChild);
-      setNewChild({ name: '', birthDate: '', type: 'Biológico' });
-      setShowAddModal(false);
-    }
+  // Função para registrar a Resposta de Oração
+  const registrarResposta = (filhoId: string, pedidoId: string, resposta: string) => {
+    setFilhos(prev => prev.map(f => {
+      if (f.id === filhoId) {
+        return {
+          ...f,
+          pedidos: f.pedidos.map(p => 
+            p.id === pedidoId ? { ...p, resposta, concluido: true } : p
+          )
+        };
+      }
+      return f;
+    }));
+    // Aqui você também adicionaria o updateDoc para salvar a resposta no Firebase
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-20 px-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="serif-font text-2xl font-bold text-brand-dark">Meus Filhos</h2>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Geração de Déboras</p>
-        </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="bg-[#FF4500] text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform"
-        >
-          <i className="fa-solid fa-plus text-xl"></i>
-        </button>
+    <div className="space-y-8 animate-fadeIn pb-24 px-2">
+      <div className="flex flex-col gap-1">
+        <h2 className="serif-font text-3xl font-bold text-brand-dark">Meus Filhos</h2>
+        <p className="text-[10px] text-brand-rose font-black uppercase tracking-[0.2em]">Intercedendo por nome</p>
       </div>
 
-      <div className="grid gap-4">
-        {children.length > 0 ? (
-          children.map((child) => (
-            <div key={child.id} className="bg-white rounded-[2.5rem] p-6 border border-brand-border shadow-sm relative overflow-hidden">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex flex-col gap-1">
-                  <div className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border self-start ${getTypeStyles(child.type)}`}>
-                    <i className={`fa-solid ${child.type === 'Biológico' ? 'fa-dna' : child.type === 'Adotivo' ? 'fa-heart' : 'fa-dove'} mr-1`}></i>
-                    {child.type}
-                  </div>
-                  <h3 className="serif-font text-2xl font-bold text-brand-dark mt-1">{child.name}</h3>
-                </div>
-                <button 
-                  onClick={() => onDeleteChild(child.id)}
-                  className="text-gray-200 hover:text-red-400 transition-colors p-2"
-                >
-                  <i className="fa-solid fa-circle-xmark text-xl"></i>
-                </button>
+      {filhos.map(filho => (
+        <div key={filho.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-orange-50 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-[#FF4500] font-black">
+                {filho.nome[0]}
               </div>
-              
-              <div className="space-y-4">
-                <ProgressBar label="Jornada 101 Dias" value={child.prayerCount || 0} max={101} color="bg-[#FF4500]" />
-                
-                <div className="flex items-center justify-between pt-2 border-t border-gray-50">
-                   <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-cake-candles text-brand-rose text-xs"></i>
-                      <p className="text-[11px] text-gray-500 font-bold">
-                        {new Date(child.birthDate).toLocaleDateString('pt-BR')}
-                      </p>
-                   </div>
-                   <div className="flex items-center gap-1 bg-orange-50 px-3 py-1 rounded-full">
-                      <i className="fa-solid fa-clock text-[#FF4500] text-[10px]"></i>
-                      <span className="text-[10px] font-bold text-[#FF4500]">15min diários</span>
-                   </div>
-                </div>
-              </div>
+              <h3 className="serif-font text-xl font-bold text-brand-dark">{filho.nome}</h3>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-16 bg-brand-soft rounded-[3rem] border-2 border-dashed border-brand-border">
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-              <i className="fa-solid fa-children text-3xl text-brand-primary opacity-40"></i>
-            </div>
-            <p className="text-sm text-gray-500 font-bold">Toque no + para cadastrar seus filhos</p>
-            <p className="text-[10px] text-gray-400 px-10 mt-1 italic">"Eis que os filhos são herança do Senhor..."</p>
+            <button 
+              onClick={() => setFilhoSelecionado(filho.id)}
+              className="text-[#FF4500] text-[10px] font-black uppercase tracking-widest bg-orange-50 px-4 py-2 rounded-full"
+            >
+              + Novo Pedido
+            </button>
           </div>
-        )}
-      </div>
 
-      {/* MODAL DE CADASTRO MELHORADO */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-brand-dark/40 backdrop-blur-md z-50 flex items-end justify-center">
-          <div className="bg-white w-full max-w-md rounded-t-[3.5rem] p-10 animate-slideUp shadow-2xl">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h3 className="serif-font text-2xl font-bold text-brand-dark">Novo Filho(a)</h3>
-                <p className="text-xs text-brand-rose font-bold">Cadastre para iniciar a jornada</p>
-              </div>
-              <button onClick={() => setShowAddModal(false)} className="bg-gray-100 w-8 h-8 rounded-full text-gray-400 flex items-center justify-center">
-                <i className="fa-solid fa-xmark"></i>
-              </button>
+          {/* Modal/Campo rápido para novo pedido */}
+          {filhoSelecionado === filho.id && (
+            <div className="flex gap-2 animate-slideDown">
+              <input 
+                type="text"
+                placeholder={`O que pedir por ${filho.nome}?`}
+                className="flex-1 bg-brand-soft border border-orange-100 rounded-full px-4 py-2 text-sm outline-none"
+                value={novoPedido}
+                onChange={(e) => setNovoPedido(e.target.value)}
+              />
+              <button onClick={() => adicionarPedido(filho.id)} className="bg-[#FF4500] text-white px-4 rounded-full text-xs font-bold">Salvar</button>
             </div>
+          )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Nome do Filho(a)</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: Lara Guerreiro"
-                  required
-                  className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-4 text-sm outline-none focus:ring-4 focus:ring-brand-primary/10 transition-all font-medium"
-                  value={newChild.name}
-                  onChange={(e) => setNewChild({...newChild, name: e.target.value})}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Nascimento</label>
-                  <input 
-                    type="date" 
-                    required
-                    className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-4 text-xs outline-none focus:ring-4 focus:ring-brand-primary/10 font-bold"
-                    value={newChild.birthDate}
-                    onChange={(e) => setNewChild({...newChild, birthDate: e.target.value})}
-                  />
+          {/* Lista de Pedidos */}
+          <div className="space-y-4">
+            {filho.pedidos.length === 0 && (
+              <p className="text-center text-gray-300 text-[10px] uppercase font-bold py-4">Nenhum pedido registrado</p>
+            )}
+            {filho.pedidos.map(p => (
+              <div key={p.id} className="bg-brand-soft/50 rounded-3xl p-5 border border-white space-y-3">
+                <div className="flex justify-between items-start">
+                  <p className="text-sm text-brand-dark font-medium leading-relaxed">{p.texto}</p>
+                  <span className="text-[8px] font-bold text-gray-400">{p.data}</span>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-brand-rose uppercase tracking-widest ml-4">Filiação</label>
-                  <div className="relative">
-                    <select 
-                      className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-4 text-xs font-bold outline-none appearance-none focus:ring-4 focus:ring-brand-primary/10"
-                      value={newChild.type}
-                      onChange={(e) => setNewChild({...newChild, type: e.target.value as any})}
-                    >
-                      <option value="Biológico">Biológico</option>
-                      <option value="Adotivo">Adotivo</option>
-                      <option value="Espiritual">Espiritual</option>
-                    </select>
-                    <i className="fa-solid fa-chevron-down absolute right-5 top-1/2 -translate-y-1/2 text-brand-rose pointer-events-none text-[10px]"></i>
+                {/* Campo de Resposta de Oração */}
+                {p.resposta ? (
+                  <div className="bg-green-50 p-3 rounded-2xl border border-green-100 mt-2">
+                    <p className="text-[9px] font-black text-green-600 uppercase mb-1">🙌 Resposta de Deus:</p>
+                    <p className="text-xs text-green-700 italic">"{p.resposta}"</p>
                   </div>
-                </div>
+                ) : (
+                  <div className="pt-2">
+                    <input 
+                      type="text"
+                      placeholder="Deus respondeu? Registre o testemunho aqui..."
+                      className="w-full bg-white/50 border border-gray-100 rounded-xl px-3 py-2 text-[10px] outline-none italic"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') registrarResposta(filho.id, p.id, e.currentTarget.value);
+                      }}
+                    />
+                  </div>
+                )}
               </div>
-
-              <div className="pt-6">
-                <button 
-                  type="submit"
-                  className="w-full bg-[#FF4500] text-white font-black py-4 rounded-full shadow-xl shadow-orange-100 active:scale-95 transition-all text-sm tracking-widest uppercase"
-                >
-                  Confirmar Cadastro
-                </button>
-              </div>
-            </form>
+            ))}
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 };
