@@ -9,7 +9,7 @@ interface PrayersProps {
   nomesFilhos?: string[];
 }
 
-const PrayersView: React.FC<PrayersProps> = ({ 
+const Prayers: React.FC<PrayersProps> = ({ 
   prayers, 
   toggleFavorite, 
   togglePrayed, 
@@ -49,34 +49,35 @@ const PrayersView: React.FC<PrayersProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn pb-24 px-2">
-      {/* HEADER AJUSTADO - REMOVIDO "101 DIAS" */}
+      {/* HEADER - Agora focado apenas em Motivos de Oração */}
       <div className="flex flex-col gap-4">
         <div>
           <h2 className="serif-font text-3xl font-bold text-brand-dark">Motivos de Oração</h2>
           <p className="text-[10px] text-[#FF4500] font-black uppercase tracking-[0.2em] mt-1">Mães de joelhos, filhos de pé</p>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="relative group">
             <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-orange-300"></i>
             <input 
               type="text" 
-              placeholder="Buscar por tema (ex: Salvação)..." 
-              className="w-full bg-white border border-orange-100 rounded-[2rem] py-4 pl-12 pr-6 text-sm focus:outline-none shadow-sm"
+              placeholder="Buscar por tema (ex: Proteção)..." 
+              className="w-full bg-white border border-orange-100 rounded-[2rem] py-4 pl-12 pr-6 text-sm focus:outline-none shadow-sm transition-all"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+          {/* CATEGORIAS - Visual moderno em abas estilo pill */}
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-2 px-2">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all border-2 shadow-sm whitespace-nowrap ${
                   selectedCategory === cat 
-                  ? 'bg-[#FF4500] text-white border-[#FF4500]' 
-                  : 'bg-white text-gray-400 border-gray-100'
+                  ? 'bg-[#FF4500] text-white border-[#FF4500] scale-95 shadow-orange-100' 
+                  : 'bg-white text-gray-400 border-orange-50/50 hover:border-orange-100'
                 }`}
               >
                 {cat}
@@ -86,13 +87,13 @@ const PrayersView: React.FC<PrayersProps> = ({
         </div>
       </div>
 
-      {/* LISTA DE MOTIVOS */}
+      {/* LISTA DE CARDS */}
       <div className="space-y-6">
         {filteredPrayers.length > 0 ? (
           filteredPrayers.map(p => (
             <div key={p.id} className={`bg-white rounded-[2.5rem] p-6 border shadow-sm transition-all relative overflow-hidden ${p.isPrayed ? 'bg-gray-50/40 opacity-90' : 'border-orange-50'}`}>
               
-              {/* TAG DE TEMA - REMOVIDO "DIA XX" */}
+              {/* HEADER DO CARD - Focado no Tema */}
               <div className="flex items-start justify-between mb-5">
                 <div className="bg-orange-50 px-4 py-1.5 rounded-full border border-orange-100">
                    <span className="text-[10px] font-black text-[#FF4500] uppercase tracking-tighter">
@@ -100,10 +101,10 @@ const PrayersView: React.FC<PrayersProps> = ({
                    </span>
                 </div>
                 <div className="flex gap-4">
-                  <button onClick={() => toggleFavorite(p.id)} className={`transition-all ${p.isFavorite ? 'text-yellow-400' : 'text-gray-200'}`}>
+                  <button onClick={() => toggleFavorite(p.id)} className={`transition-all hover:scale-110 ${p.isFavorite ? 'text-yellow-400' : 'text-gray-200'}`}>
                     <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star text-xl`}></i>
                   </button>
-                  <button onClick={() => handleShare(p)} className="text-gray-200 hover:text-green-500">
+                  <button onClick={() => handleShare(p)} className="text-gray-200 hover:text-green-500 transition-colors">
                     <i className="fa-solid fa-share-nodes text-xl"></i>
                   </button>
                 </div>
@@ -123,37 +124,40 @@ const PrayersView: React.FC<PrayersProps> = ({
                   <i className="fa-solid fa-book-bible text-[10px]"></i>
                   <span className="text-[9px] font-black uppercase tracking-widest">A Palavra de Deus</span>
                 </div>
-                <p className="text-sm text-brand-dark italic font-serif">
+                <p className="text-sm text-brand-dark italic font-serif leading-snug">
                   "{p.versiculo}"
                 </p>
               </div>
 
-              {/* ANOTAÇÕES E BOTÃO CONCLUIR */}
+              {/* ANOTAÇÕES E BOTÃO DE CONCLUSÃO */}
               <div className="space-y-4 pt-4 border-t border-gray-50">
-                <textarea 
-                  placeholder="Minhas anotações..."
-                  className="w-full bg-gray-50/50 border border-gray-100 rounded-[1.5rem] p-4 text-xs h-20 resize-none"
-                  value={p.personalNotes || ''}
-                  onChange={(e) => updateNote(p.id, e.target.value)}
-                />
+                <div className="relative">
+                  <textarea 
+                    placeholder="Anote o que Deus falar ao seu coração..."
+                    className="w-full bg-gray-50/50 border border-gray-100 rounded-[1.5rem] p-4 text-xs focus:outline-none focus:ring-2 focus:ring-orange-100 h-24 resize-none transition-all"
+                    value={p.personalNotes || ''}
+                    onChange={(e) => updateNote(p.id, e.target.value)}
+                  />
+                  <i className="fa-solid fa-pen-nib absolute right-4 bottom-4 text-gray-200 pointer-events-none"></i>
+                </div>
 
                 <button 
                   onClick={() => togglePrayed(p.id)}
                   className={`w-full py-4.5 rounded-full text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all ${
                     p.isPrayed 
                     ? 'bg-green-100 text-green-600 border border-green-200' 
-                    : 'bg-[#FF4500] text-white shadow-lg shadow-orange-200'
+                    : 'bg-[#FF4500] text-white shadow-lg shadow-orange-200 active:scale-95'
                   }`}
                 >
-                  <i className={`fa-solid ${p.isPrayed ? 'fa-check-circle' : 'fa-pray'}`}></i>
-                  {p.isPrayed ? 'CONCLUÍDO HOJE' : 'MARCAR COMO ORADO'}
+                  <i className={`fa-solid ${p.isPrayed ? 'fa-circle-check' : 'fa-pray'}`}></i>
+                  {p.isPrayed ? 'CONCLUÍDO HOJE' : 'CONFIRMAR ORAÇÃO'}
                 </button>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-orange-100 text-gray-400">
-            <p className="text-sm font-black uppercase tracking-widest">Nenhum motivo encontrado</p>
+          <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-orange-100">
+            <p className="text-sm font-black text-gray-300 uppercase tracking-widest">Nenhum motivo encontrado</p>
           </div>
         )}
       </div>
@@ -161,4 +165,4 @@ const PrayersView: React.FC<PrayersProps> = ({
   );
 };
 
-export default PrayersView;
+export default Prayers;
