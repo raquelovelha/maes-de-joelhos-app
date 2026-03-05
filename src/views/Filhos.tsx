@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore';
 
 interface Pedido {
   id: string;
@@ -16,19 +16,39 @@ interface Filho {
   pedidos: Pedido[];
 }
 
-const FilhosView: React.FC = () => {
-  // Estado inicial com Lara e Liz (isso idealmente viria do Firebase)
+const Filhos: React.FC = () => {
   const [filhos, setFilhos] = useState<Filho[]>([
-    { id: '1', nome: 'Lara', pedidos: [] },
-    { id: '2', nome: 'Liz', pedidos: [] }
+    { id: 'lara', nome: 'Lara', pedidos: [] },
+    { id: 'liz', nome: 'Liz', pedidos: [] }
   ]);
-
   const [novoPedido, setNovoPedido] = useState('');
   const [filhoSelecionado, setFilhoSelecionado] = useState<string | null>(null);
 
-  // Função para adicionar novo pedido
+  // --- 1. BUSCA DADOS EM TEMPO REAL (Garante que não sumam) ---
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const userRef = doc(db, "usuarios", auth.currentUser.uid);
+    
+    // O onSnapshot "escuta" o banco. Se mudar lá, atualiza aqui na hora.
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.pedidos_filhos) {
+          setFilhos(prev => prev.map(f => ({
+            ...f,
+            pedidos: data.pedidos_filhos[f.id] || []
+          })));
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // --- 2. ADICIONAR PEDIDO ---
   const adicionarPedido = async (filhoId: string) => {
-    if (!novoPedido.trim()) return;
+    if (!novoPedido.trim() || !auth.currentUser) return;
 
     const pedidoObj: Pedido = {
       id: Date.now().toString(),
@@ -37,39 +57,57 @@ const FilhosView: React.FC = () => {
       concluido: false
     };
 
-    // Atualiza localmente
-    setFilhos(prev => prev.map(f => 
-      f.id === filhoId ? { ...f, pedidos: [pedidoObj, ...f.pedidos] } : f
-    ));
-
-    // Salva no Firebase (ajuste conforme sua estrutura de coleção)
-    if (auth.currentUser) {
-      try {
-        const userRef = doc(db, "usuarios", auth.currentUser.uid);
-        await updateDoc(userRef, {
-          [`pedidos_filhos.${filhoId}`]: arrayUnion(pedidoObj)
-        });
-      } catch (e) { console.error(e); }
+    try {
+      const userRef = doc(db, "usuarios", auth.currentUser.uid);
+      await updateDoc(userRef, {
+        [`pedidos_filhos.${filhoId}`]: arrayUnion(pedidoObj)
+      });
+      setNovoPedido('');
+      setFilhoSelecionado(null);
+    } catch (e) {
+      console.error("Erro ao salvar pedido:", e);
     }
-
-    setNovoPedido('');
-    setFilhoSelecionado(null);
   };
 
-  // Função para registrar a Resposta de Oração
-  const registrarResposta = (filhoId: string, pedidoId: string, resposta: string) => {
-    setFilhos(prev => prev.map(f => {
-      if (f.id === filhoId) {
-        return {
-          ...f,
-          pedidos: f.pedidos.map(p => 
-            p.id === pedidoId ? { ...p, resposta, concluido: true } : p
-          )
-        };
-      }
-      return f;
-    }));
-    // Aqui você também adicionaria o updateDoc para salvar a resposta no Firebase
+  // --- 3. REGISTRAR RESPOSTA (TESTEMUNHO) ---
+  const registrarResposta = async (filhoId: string, pedidoId: string, resposta: string) => {
+    if (!auth.currentUser) return;
+
+    const filhoAlvo = filhos.find(f => f.id === filhoId);
+    if (!filhoAlvo) return;
+
+    // Criamos a nova lista com o pedido atualizado
+    const novosPedidos = filhoAlvo.pedidos.map(p => 
+      p.id === pedidoId ? { ...p, resposta, concluido: true } : p
+    );
+
+    try {
+      const userRef = doc(db, "usuarios", auth.currentUser.uid);
+      await updateDoc(userRef, {
+        [`pedidos_filhos.${filhoId}`]: novosPedidos
+      });
+    } catch (e) {
+      console.error("Erro ao salvar resposta:", e);
+    }
+  };
+
+  // --- 4. EXCLUIR PEDIDO (A pedido do usuário) ---
+  const excluirPedido = async (filhoId: string, pedidoId: string) => {
+    if (!window.confirm("Deseja excluir este pedido?") || !auth.currentUser) return;
+
+    const filhoAlvo = filhos.find(f => f.id === filhoId);
+    if (!filhoAlvo) return;
+
+    const pedidosRestantes = filhoAlvo.pedidos.filter(p => p.id !== pedidoId);
+
+    try {
+      const userRef = doc(db, "usuarios", auth.currentUser.uid);
+      await updateDoc(userRef, {
+        [`pedidos_filhos.${filhoId}`]: pedidosRestantes
+      });
+    } catch (e) {
+      console.error("Erro ao excluir:", e);
+    }
   };
 
   return (
@@ -92,11 +130,10 @@ const FilhosView: React.FC = () => {
               onClick={() => setFilhoSelecionado(filho.id)}
               className="text-[#FF4500] text-[10px] font-black uppercase tracking-widest bg-orange-50 px-4 py-2 rounded-full"
             >
-              + Novo Pedido
+              + NOVO PEDIDO
             </button>
           </div>
 
-          {/* Modal/Campo rápido para novo pedido */}
           {filhoSelecionado === filho.id && (
             <div className="flex gap-2 animate-slideDown">
               <input 
@@ -106,39 +143,39 @@ const FilhosView: React.FC = () => {
                 value={novoPedido}
                 onChange={(e) => setNovoPedido(e.target.value)}
               />
-              <button onClick={() => adicionarPedido(filho.id)} className="bg-[#FF4500] text-white px-4 rounded-full text-xs font-bold">Salvar</button>
+              <button onClick={() => adicionarPedido(filho.id)} className="bg-[#FF4500] text-white px-4 rounded-full text-xs font-bold">SALVAR</button>
             </div>
           )}
 
-          {/* Lista de Pedidos */}
           <div className="space-y-4">
-            {filho.pedidos.length === 0 && (
-              <p className="text-center text-gray-300 text-[10px] uppercase font-bold py-4">Nenhum pedido registrado</p>
-            )}
             {filho.pedidos.map(p => (
-              <div key={p.id} className="bg-brand-soft/50 rounded-3xl p-5 border border-white space-y-3">
-                <div className="flex justify-between items-start">
+              <div key={p.id} className="bg-brand-soft/50 rounded-3xl p-5 border border-white space-y-3 relative group">
+                <button 
+                  onClick={() => excluirPedido(filho.id, p.id)}
+                  className="absolute top-4 right-4 text-gray-300 hover:text-red-400 transition-colors"
+                >
+                  <i className="fa-solid fa-trash-can text-xs"></i>
+                </button>
+
+                <div className="pr-8">
                   <p className="text-sm text-brand-dark font-medium leading-relaxed">{p.texto}</p>
                   <span className="text-[8px] font-bold text-gray-400">{p.data}</span>
                 </div>
 
-                {/* Campo de Resposta de Oração */}
                 {p.resposta ? (
                   <div className="bg-green-50 p-3 rounded-2xl border border-green-100 mt-2">
-                    <p className="text-[9px] font-black text-green-600 uppercase mb-1">🙌 Resposta de Deus:</p>
+                    <p className="text-[9px] font-black text-green-600 uppercase mb-1">🙌 RESPOSTA DE DEUS:</p>
                     <p className="text-xs text-green-700 italic">"{p.resposta}"</p>
                   </div>
                 ) : (
-                  <div className="pt-2">
-                    <input 
-                      type="text"
-                      placeholder="Deus respondeu? Registre o testemunho aqui..."
-                      className="w-full bg-white/50 border border-gray-100 rounded-xl px-3 py-2 text-[10px] outline-none italic"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') registrarResposta(filho.id, p.id, e.currentTarget.value);
-                      }}
-                    />
-                  </div>
+                  <input 
+                    type="text"
+                    placeholder="Deus respondeu? Registre aqui..."
+                    className="w-full bg-white/50 border border-gray-100 rounded-xl px-3 py-2 text-[10px] outline-none italic"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') registrarResposta(filho.id, p.id, e.currentTarget.value);
+                    }}
+                  />
                 )}
               </div>
             ))}
@@ -149,4 +186,4 @@ const FilhosView: React.FC = () => {
   );
 };
 
-export default FilhosView;
+export default Filhos;
