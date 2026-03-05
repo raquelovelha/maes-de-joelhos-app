@@ -1,114 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
-const ProfileView: React.FC = () => {
-  const [loading, setLoading] = useState(true);
+interface ProfileProps {
+  profile: any;
+  stats: any;
+  setProfile: (profile: any) => void;
+}
+
+const ProfileView: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => {
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({
-    nome: '',
-    email: '',
-    fotoUrl: '',
-    cidade: '',
-    estado: '',
-    dataNascimento: '',
-    igreja: '',
-    grupoDeboras: '',
-    filhosAdotados: 0,
-    minutosIntercedidos: 0,
-    diasConsecutivos: 0
-  });
 
-  // Função veloz para pegar iniciais (Ex: "Lara Liz" -> "LL")
+  // Função para gerar as iniciais dinâmicas (ex: Raquel Guerreiro -> RG)
   const getInitials = (name: string) => {
-    if (!name) return 'M';
+    if (!name || name === 'Missionária') return 'M';
     const names = name.trim().split(' ');
     return names.length > 1 
       ? (names[0][0] + names[names.length - 1][0]).toUpperCase() 
       : names[0][0].toUpperCase();
   };
 
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (auth.currentUser) {
-        const docRef = doc(db, "usuarios", auth.currentUser.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setProfile(prev => ({ ...prev, ...docSnap.data() }));
-        }
-        setLoading(false);
-      }
-    };
-    loadProfile();
-  }, []);
-
   const handleSave = async () => {
     if (!auth.currentUser) return;
     setSaving(true);
     try {
       const userRef = doc(db, "usuarios", auth.currentUser.uid);
-      await updateDoc(userRef, profile);
+      await updateDoc(userRef, {
+        nome: profile.nome,
+        cidade: profile.cidade,
+        estado: profile.estado,
+        igreja: profile.igreja,
+        grupoDeboras: profile.grupoDeboras,
+        dataNascimento: profile.dataNascimento,
+        filhosAdotados: profile.filhosAdotados
+      });
       alert("Perfil atualizado com sucesso! 🙏");
     } catch (error) {
-      alert("Erro ao salvar. Verifique sua conexão.");
+      console.error("Erro ao salvar:", error);
+      alert("Erro ao salvar perfil.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF5F1]">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#FF4500]"></div>
-    </div>
-  );
-
   return (
-    <div className="space-y-6 animate-fadeIn pb-28 px-4 bg-[#FFF5F1] min-h-screen pt-4">
-      
-      {/* CARD DE CABEÇALHO COM AVATAR */}
-      <div className="bg-white rounded-[3.5rem] p-8 shadow-sm border border-orange-50 flex flex-col items-center text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-orange-100/40 to-transparent"></div>
+    <div className="space-y-6 animate-fadeIn pb-24 px-2">
+      {/* CABEÇALHO DO PERFIL COM AVATAR DE INICIAIS */}
+      <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-brand-border flex flex-col items-center text-center relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-r from-orange-100/30 to-pink-100/30"></div>
         
         <div className="relative mt-4">
-          {/* Avatar com Gradiente e Iniciais */}
-          <div className="w-28 h-28 rounded-full border-4 border-white shadow-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-[#FF4500] to-[#FF8C00]">
+          <div className="w-28 h-28 rounded-full border-4 border-white shadow-lg flex items-center justify-center bg-gradient-to-br from-[#FF4500] to-[#FF8C00]">
             {profile.fotoUrl ? (
-              <img src={profile.fotoUrl} alt="Perfil" className="w-full h-full object-cover" />
+              <img src={profile.fotoUrl} alt="Perfil" className="w-full h-full object-cover rounded-full" />
             ) : (
-              <span className="text-4xl font-black text-white tracking-tighter">
+              <span className="text-4xl font-black text-white tracking-tighter shadow-sm">
                 {getInitials(profile.nome)}
               </span>
             )}
           </div>
-          
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full shadow-md border border-orange-100">
-            <p className="text-[9px] font-black text-[#FF4500] uppercase tracking-widest">Intercessora</p>
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-white px-3 py-1 rounded-full shadow-sm border border-orange-100 whitespace-nowrap">
+            <p className="text-[8px] font-black text-[#FF4500] uppercase tracking-widest">Intercessora</p>
           </div>
         </div>
 
-        <div className="mt-6">
-          <h2 className="serif-font text-2xl font-bold text-brand-dark">{profile.nome || 'Mãe de Oração'}</h2>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
-            {profile.grupoDeboras || 'Geração de Joelhos'}
-          </p>
-        </div>
+        <h2 className="serif-font text-2xl font-bold text-brand-dark mt-6">{profile.nome || 'Missionária'}</h2>
+        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">{profile.grupoDeboras || 'Déboras Online'}</p>
 
-        {/* STATS RÁPIDOS */}
+        {/* ESTATÍSTICAS ATUALIZADAS */}
         <div className="grid grid-cols-2 gap-4 w-full mt-8">
           <div className="bg-orange-50/50 p-4 rounded-3xl border border-orange-100">
-            <p className="text-[9px] font-black text-gray-400 uppercase">Dias Seguidos</p>
-            <p className="text-2xl font-black text-[#FF4500]">{profile.diasConsecutivos} 🔥</p>
+            <p className="text-[9px] font-black text-[#FF4500] uppercase">Pedidos Orados</p>
+            <p className="text-2xl font-black text-[#FF4500]">
+              {profile.pedidosConcluidos || 0} 🙏
+            </p>
           </div>
           <div className="bg-pink-50/50 p-4 rounded-3xl border border-pink-100">
-            <p className="text-[9px] font-black text-gray-400 uppercase">Minutos Totais</p>
-            <p className="text-2xl font-black text-brand-rose">{profile.minutosIntercedidos}</p>
+            <p className="text-[9px] font-black text-brand-rose uppercase">Minutos Totais</p>
+            <p className="text-2xl font-black text-brand-rose">
+              {profile.minutosIntercedidos || 0}
+            </p>
           </div>
         </div>
       </div>
 
       {/* FORMULÁRIO DE DADOS */}
-      <div className="bg-white rounded-[3.5rem] p-8 shadow-sm border border-orange-50 space-y-5">
-        <h3 className="serif-font text-xl font-bold text-brand-dark mb-2">Meus Dados</h3>
+      <div className="bg-white rounded-[3rem] p-8 shadow-sm border border-brand-border space-y-5">
+        <h3 className="serif-font text-xl font-bold text-brand-dark mb-4">Meus Dados</h3>
         
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -116,7 +94,7 @@ const ProfileView: React.FC = () => {
             <input 
               type="date" 
               className="w-full bg-brand-soft border border-brand-border rounded-full px-5 py-3 text-xs font-bold outline-none"
-              value={profile.dataNascimento}
+              value={profile.dataNascimento || ''}
               onChange={(e) => setProfile({...profile, dataNascimento: e.target.value})}
             />
           </div>
@@ -125,7 +103,7 @@ const ProfileView: React.FC = () => {
             <input 
               type="number" 
               className="w-full bg-brand-soft border border-brand-border rounded-full px-5 py-3 text-xs font-bold outline-none"
-              value={profile.filhosAdotados}
+              value={profile.filhosAdotados || 0}
               onChange={(e) => setProfile({...profile, filhosAdotados: parseInt(e.target.value) || 0})}
             />
           </div>
@@ -135,9 +113,9 @@ const ProfileView: React.FC = () => {
           <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Igreja</label>
           <input 
             type="text" 
-            placeholder="Nome da congregação"
+            placeholder="Sua igreja local"
             className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none"
-            value={profile.igreja}
+            value={profile.igreja || ''}
             onChange={(e) => setProfile({...profile, igreja: e.target.value})}
           />
         </div>
@@ -148,17 +126,17 @@ const ProfileView: React.FC = () => {
             <input 
               type="text" 
               className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none"
-              value={profile.cidade}
+              value={profile.cidade || ''}
               onChange={(e) => setProfile({...profile, cidade: e.target.value})}
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Estado (UF)</label>
+            <label className="text-[9px] font-black text-brand-rose uppercase ml-4">UF</label>
             <input 
               type="text" 
               maxLength={2}
               className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none text-center font-bold"
-              value={profile.estado}
+              value={profile.estado || ''}
               onChange={(e) => setProfile({...profile, estado: e.target.value.toUpperCase()})}
             />
           </div>
@@ -168,9 +146,9 @@ const ProfileView: React.FC = () => {
           <label className="text-[9px] font-black text-brand-rose uppercase ml-4">Grupo de Déboras</label>
           <input 
             type="text" 
-            placeholder="Nome do seu grupo"
+            placeholder="Nome do grupo"
             className="w-full bg-brand-soft border border-brand-border rounded-full px-6 py-3 text-sm outline-none"
-            value={profile.grupoDeboras}
+            value={profile.grupoDeboras || ''}
             onChange={(e) => setProfile({...profile, grupoDeboras: e.target.value})}
           />
         </div>
@@ -183,13 +161,6 @@ const ProfileView: React.FC = () => {
           {saving ? 'SALVANDO...' : 'ATUALIZAR PERFIL'}
         </button>
       </div>
-
-      <button 
-        onClick={() => auth.signOut()}
-        className="w-full text-gray-300 font-bold text-[10px] uppercase tracking-widest py-4 mb-10"
-      >
-        <i className="fa-solid fa-right-from-bracket mr-2"></i> Sair do Aplicativo
-      </button>
     </div>
   );
 };

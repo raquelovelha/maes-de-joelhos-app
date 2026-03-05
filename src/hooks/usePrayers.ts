@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { db } from '../firebase';
-import { getAuth } from 'firebase/auth'; // Adicionado
-import { collection, getDocs, query, orderBy, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import { collection, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { PrayerRequest } from '../types';
 
 export const usePrayers = () => {
@@ -9,22 +9,18 @@ export const usePrayers = () => {
   const [loading, setLoading] = useState(true);
   
   const auth = getAuth();
-  const userId = auth.currentUser?.uid; // Pega o ID da usuária logada automaticamente
+  const userId = auth.currentUser?.uid;
 
-  // 1. CARREGAR DADOS (Orações + Progresso da Utilizadora)
+  // 1. CARREGAR DADOS
   useEffect(() => {
     const loadData = async () => {
-      // Se não houver usuário logado ainda, não tenta buscar dados
       if (!userId) return;
 
       try {
         setLoading(true);
-        
-        // A. Busca as 101 sugestões fixas
         const qSugestoes = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc"));
         const snapSugestoes = await getDocs(qSugestoes);
         
-        // B. Busca o progresso salvo desta utilizadora específica
         const userDocRef = doc(db, "user_progress", userId);
         const userDocSnap = await getDoc(userDocRef);
         const userProgress = userDocSnap.exists() ? userDocSnap.data().prayers : {};
@@ -54,15 +50,13 @@ export const usePrayers = () => {
     };
 
     loadData();
-  }, [userId]); // Recarrega se o usuário mudar (login/logout)
+  }, [userId]);
 
-  // 2. FUNÇÃO AUXILIAR PARA SALVAR NO FIREBASE
+  // 2. SALVAR PROGRESSO DAS ORAÇÕES
   const saveToFirebase = async (updatedPrayers: PrayerRequest[]) => {
     if (!userId) return;
-
     try {
       const userDocRef = doc(db, "user_progress", userId);
-      
       const progressToSave = updatedPrayers.reduce((acc: any, p) => {
         acc[p.id] = {
           isPrayed: p.isPrayed,
@@ -78,13 +72,19 @@ export const usePrayers = () => {
     }
   };
 
-  // 3. MARCAR COMO ORADO
-  const togglePrayed = useCallback((id: number) => {
+  // 3. MARCAR COMO ORADO (Com atualização de contador no perfil)
+  const togglePrayed = useCallback(async (id: number) => {
+    let isMarkingAsDone = false;
+
     setPrayers(prev => {
+      const prayerToUpdate = prev.find(p => p.id === id);
+      isMarkingAsDone = prayerToUpdate ? !prayerToUpdate.isPrayed : false;
+
       const updated = prev.map(p => p.id === id ? { ...p, isPrayed: !p.isPrayed } : p);
       
+      // Se completou o ciclo, reseta mas mantém os pontos ganhos
       if (updated.length >= 101 && updated.every(p => p.isPrayed)) {
-        alert("Glória a Deus! Você completou o ciclo de 101 orações.");
+        alert("Glória a Deus! Você completou o ciclo de orações.");
         const reseted = updated.map(p => ({ ...p, isPrayed: false }));
         saveToFirebase(reseted);
         return reseted;
@@ -93,6 +93,18 @@ export const usePrayers = () => {
       saveToFirebase(updated);
       return updated;
     });
+
+    // ATUALIZAÇÃO DO PERFIL: Se estiver marcando como feito, incrementa o contador global
+    if (isMarkingAsDone && userId) {
+      try {
+        const userRef = doc(db, "usuarios", userId);
+        await updateDoc(userRef, {
+          pedidosConcluidos: increment(1)
+        });
+      } catch (error) {
+        console.error("Erro ao atualizar contador de pedidos:", error);
+      }
+    }
   }, [userId]);
 
   // 4. FAVORITAR
