@@ -1,8 +1,5 @@
-
-// Responsabilidade: Perfil do usuário e validação de selo "Débora Cadastrada"
-// Inputs: profile, stats, setProfile | Outputs: JSX
-
 import React, { useState } from 'react';
+import { getAuth, signOut } from 'firebase/auth'; 
 import { UserProfile, UserStats } from '../types';
 import { ActionButton, ProgressBar, InstitutionalFooter } from '../components/UI';
 import { formatCPF } from '../utils/helpers';
@@ -13,10 +10,23 @@ interface ProfileProps {
   setProfile?: React.Dispatch<React.SetStateAction<UserProfile>>;
 }
 
-const ProfileView: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => {
+// Alterado de ProfileView para Profile
+const Profile: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => {
   const [cpfInput, setCpfInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  
   const isVerified = profile.name === "Ricardo Oliveira";
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      if (window.confirm("Deseja realmente sair da conta?")) {
+        await signOut(auth);
+      }
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+    }
+  };
 
   const handleConsultar = () => {
     if (cpfInput === '123.456.789-00') {
@@ -48,12 +58,21 @@ const ProfileView: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => 
           />
           <button onClick={handleConsultar} className="bg-brand-rose text-white px-6 rounded-full text-[10px] font-black uppercase">Validar</button>
         </div>
-        {errorMsg && <p className="text-[9px] text-red-500 font-bold ml-4">{errorMsg} <a href="https://mpc.transforme.tech/captura/voluntario/cadastrodeboras" target="_blank" className="underline ml-1">Cadastrar</a></p>}
+        {errorMsg && (
+          <p className="text-[9px] text-red-500 font-bold ml-4">
+            {errorMsg} 
+            <a href="https://mpc.transforme.tech/captura/voluntario/cadastrodeboras" target="_blank" rel="noreferrer" className="underline ml-1">Cadastrar</a>
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col items-center text-center space-y-4">
-        <div className="w-24 h-24 rounded-full border-4 border-brand-primary p-1 shadow-lg">
-          <img src={profile.photo || "https://picsum.photos/seed/profile/400"} className="w-full h-full object-cover rounded-full" alt="User" />
+        <div className="w-24 h-24 rounded-full border-4 border-brand-primary p-1 shadow-lg overflow-hidden">
+          <img 
+            src={profile.photo || "https://picsum.photos/seed/profile/400"} 
+            className="w-full h-full object-cover rounded-full" 
+            alt="User" 
+          />
         </div>
         <div>
           <h2 className="serif-font text-2xl font-bold text-brand-dark">{profile.name}</h2>
@@ -72,7 +91,15 @@ const ProfileView: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => 
 
       <div className="space-y-2">
         <ActionButton label="Privacidade" onClick={() => {}} variant="outline" fullWidth icon="fa-shield-halved" />
-        <ActionButton label="Sair da Conta" onClick={() => {}} variant="outline" fullWidth icon="fa-right-from-bracket" className="text-red-400 border-red-100" />
+        
+        <ActionButton 
+          label="Sair da Conta" 
+          onClick={handleLogout} 
+          variant="outline" 
+          fullWidth 
+          icon="fa-right-from-bracket" 
+          className="text-red-400 border-red-100" 
+        />
       </div>
 
       <InstitutionalFooter />
@@ -80,4 +107,5 @@ const ProfileView: React.FC<ProfileProps> = ({ profile, stats, setProfile }) => 
   );
 };
 
-export default ProfileView;
+// Alterado para Profile
+export default Profile;
