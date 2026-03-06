@@ -1,115 +1,131 @@
-import React, { useState, useMemo } from 'react';
-import { PrayerRequest } from '../types';
+import React, { useState, useEffect, useMemo } from 'react';
 
-interface PrayersProps {
-  prayers: PrayerRequest[];
-  toggleFavorite: (id: number) => void;
-  togglePrayed: (id: number) => void;
-  updateNote: (id: number, note: string) => void;
-}
+const Prayers: React.FC<any> = ({ prayers = [], updateProfileStats }) => {
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15 * 60); 
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
 
-const Prayers: React.FC<PrayersProps> = ({ prayers = [], toggleFavorite, togglePrayed }) => {
-  const [viewMode, setViewMode] = useState<'missao' | 'categorias'>('missao');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  const categories = ['SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS', 'FAMÍLIA', 'IGREJA'];
-
-  // LÓGICA 1: Selecionar 5 pedidos fixos para o dia (baseado na data atual)
+  // Seleção dos 5 alvos do dia
   const missaoDoDia = useMemo(() => {
-    const seed = new Date().getDate() + new Date().getMonth(); // Muda todo dia
-    const shuffled = [...prayers].sort(() => 0.5 - Math.random() * seed);
-    return shuffled.slice(0, 5);
-  }, [prayers.length]); // Só recalcula se a base de dados mudar
+    const seed = new Date().getDate();
+    return [...prayers].sort(() => 0.5 - Math.random() * seed).slice(0, 5);
+  }, [prayers.length]);
 
-  // LÓGICA 2: Filtrar por categoria quando ela quiser explorar mais
-  const pedidosPorCategoria = useMemo(() => {
-    if (!selectedCategory) return [];
-    return prayers.filter(p => p.category?.toUpperCase() === selectedCategory);
-  }, [prayers, selectedCategory]);
+  // Timer
+  useEffect(() => {
+    let interval: any;
+    if (isTimerActive && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (timeLeft === 0 && !isFinished) {
+      setIsFinished(true);
+      setIsTimerActive(false);
+      // Aqui você pode chamar a função para salvar os 15min no perfil
+      if(updateProfileStats) updateProfileStats(15, 5); 
+    }
+    return () => clearInterval(interval);
+  }, [isTimerActive, timeLeft, isFinished]);
+
+  // Troca de alvo a cada 3 min (180s)
+  useEffect(() => {
+    const step = Math.floor(((15 * 60) - timeLeft) / 180);
+    if (step < 5 && step !== currentStep) setCurrentStep(step);
+  }, [timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  if (isFinished) {
+    return (
+      <div className="fixed inset-0 bg-[#5c00b8] z-[200] flex flex-col items-center justify-center p-8 text-white animate-fadeIn">
+        <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6 animate-bounce">
+          <i className="fa-solid fa-hands-praying text-4xl"></i>
+        </div>
+        <h2 className="serif-font text-4xl font-bold mb-2">Amém!</h2>
+        <p className="text-center text-white/70 mb-10 italic max-w-xs">
+          "Pois onde dois ou três estiverem reunidos em meu nome, ali estou eu no meio deles."
+        </p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="bg-white text-purple-600 w-full py-5 rounded-full font-black uppercase tracking-widest shadow-2xl active:scale-95 transition-all"
+        >
+          Gerar Card de Vitória
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 pb-32 px-4 pt-6 animate-fadeIn">
-      <header className="px-2">
-        <h2 className="serif-font text-3xl font-bold text-[#2D1B4D]">Momento de Intercessão</h2>
-        <p className="text-[#FF4D8C] text-[10px] font-black uppercase tracking-[0.2em] mt-1">15 Minutos com o Senhor</p>
-      </header>
-
-      {viewMode === 'missao' ? (
-        <>
-          {/* SEÇÃO: MISSÃO DO DIA */}
-          <div className="bg-gradient-to-br from-[#5c00b8] to-[#8227e3] rounded-[2.5rem] p-6 text-white shadow-xl shadow-purple-100">
-            <h3 className="font-bold text-lg mb-1">Sua Missão de Hoje</h3>
-            <p className="text-white/70 text-xs mb-6 italic">Selecionamos 5 alvos especiais para suas orações agora.</p>
-            
-            <div className="space-y-4">
-              {missaoDoDia.map((p, index) => (
-                <div key={p.id} className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-black text-xs">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-sm leading-tight">{p.title}</p>
-                    <p className="text-[10px] text-white/60 uppercase font-black">{p.category}</p>
-                  </div>
-                  <button onClick={() => togglePrayed(p.id)} className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${p.isPrayed ? 'bg-green-400 text-white' : 'bg-white/20 text-white/40'}`}>
-                    <i className="fa-solid fa-check text-xs"></i>
-                  </button>
-                </div>
-              ))}
-            </div>
+    <div className="space-y-8 pb-32 px-4 pt-8 animate-fadeIn text-center">
+      
+      {!isTimerActive && timeLeft === 15 * 60 ? (
+        <div className="py-12 space-y-8">
+          <div className="space-y-2">
+            <h2 className="serif-font text-4xl font-bold text-[#2D1B4D]">Hora da Batalha</h2>
+            <p className="text-orange-500 text-[10px] font-black uppercase tracking-[0.3em]">Mãe de joelhos, filho de pé</p>
+          </div>
+          
+          <div className="bg-gray-50 rounded-[3rem] p-8 border border-gray-100">
+             <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                Hoje vamos interceder por 5 áreas específicas da vida dos nossos filhos. Serão 15 minutos de entrega total.
+             </p>
+             <div className="flex justify-center gap-2 mb-2">
+                {[1,2,3,4,5].map(i => <div key={i} className="w-2 h-2 rounded-full bg-purple-200"></div>)}
+             </div>
           </div>
 
-          {/* BOTÃO PARA EXPLORAR MAIS */}
-          <div className="pt-4 px-2">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Deseja interceder por mais?</p>
-            <button 
-              onClick={() => setViewMode('categorias')}
-              className="w-full py-5 border-2 border-dashed border-purple-200 rounded-[2rem] text-purple-600 text-[10px] font-black uppercase tracking-widest hover:bg-purple-50 transition-all"
-            >
-              <i className="fa-solid fa-magnifying-glass mr-2"></i>
-              Explorar pedidos por categoria
-            </button>
-          </div>
-        </>
-      ) : (
-        /* VISÃO POR CATEGORIAS */
-        <div className="space-y-6 animate-fadeIn">
           <button 
-            onClick={() => { setViewMode('missao'); setSelectedCategory(null); }}
-            className="text-[10px] font-black text-purple-600 uppercase flex items-center gap-2 mb-2"
+            onClick={() => setIsTimerActive(true)}
+            className="bg-[#5c00b8] text-white w-full py-6 rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-purple-200 active:scale-95 transition-all"
           >
-            <i className="fa-solid fa-arrow-left"></i> Voltar para Missão do Dia
+            Iniciar Intercessão
           </button>
-
-          <div className="grid grid-cols-2 gap-3">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`p-4 rounded-3xl border-2 text-[10px] font-black transition-all ${selectedCategory === cat ? 'border-orange-500 bg-orange-50 text-orange-600' : 'border-gray-100 bg-white text-gray-400'}`}
-              >
-                {cat}
-              </button>
-            ))}
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {/* CRONÔMETRO CIRCULAR */}
+          <div className="relative inline-block mt-4">
+             <svg className="w-56 h-56 transform -rotate-90">
+                <circle cx="112" cy="112" r="100" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-gray-100" />
+                <circle cx="112" cy="112" r="100" stroke="currentColor" strokeWidth="6" fill="transparent" 
+                        strokeDasharray={628} strokeDashoffset={628 - (628 * timeLeft) / (15 * 60)}
+                        className="text-purple-600 transition-all duration-1000 stroke-round" />
+             </svg>
+             <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-5xl font-black text-[#2D1B4D] tracking-tighter">{formatTime(timeLeft)}</span>
+                <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1">Tempo de Clamor</span>
+             </div>
           </div>
 
-          {selectedCategory && (
-            <div className="space-y-4 pt-4 animate-slideUp">
-              <h4 className="font-black text-[10px] text-orange-500 uppercase tracking-widest px-2 italic">Pedidos de {selectedCategory}:</h4>
-              {pedidosPorCategoria.map(p => (
-                <div key={p.id} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
-                   <h3 className="font-bold text-[#2D1B4D] mb-2">{p.title}</h3>
-                   <p className="text-gray-500 text-sm italic mb-4">"{p.description}"</p>
-                   <button 
-                    onClick={() => togglePrayed(p.id)}
-                    className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${p.isPrayed ? 'bg-green-500 text-white' : 'bg-[#FF5722] text-white'}`}
-                   >
-                     {p.isPrayed ? 'CONCLUÍDO' : 'INTERCEDER'}
-                   </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* ALVO ATUAL (SEM BOTÕES) */}
+          <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-purple-100 border border-purple-50 animate-slideUp">
+             <span className="bg-orange-100 text-orange-600 text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest mb-6 inline-block">
+                Alvo {currentStep + 1} de 5
+             </span>
+             
+             <h3 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-4 italic leading-tight">
+                "{missaoDoDia[currentStep]?.title}"
+             </h3>
+             <p className="text-gray-500 text-base leading-relaxed italic font-light">
+                {missaoDoDia[currentStep]?.description}
+             </p>
+
+             {/* BARRA DE PROGRESSO DO ALVO ATUAL (3 MIN) */}
+             <div className="mt-8 h-1 w-full bg-gray-50 rounded-full overflow-hidden">
+                <div className="h-full bg-orange-400 transition-all duration-1000" 
+                     style={{ width: `${((180 - (timeLeft % 180)) / 180) * 100}%` }}></div>
+             </div>
+          </div>
+
+          <button 
+            onClick={() => setIsTimerActive(!isTimerActive)}
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-purple-600 transition-colors"
+          >
+            {isTimerActive ? <><i className="fa-solid fa-pause mr-2"></i>Pausar Oração</> : <><i className="fa-solid fa-play mr-2"></i>Retomar Oração</>}
+          </button>
         </div>
       )}
     </div>
