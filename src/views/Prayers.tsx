@@ -5,49 +5,36 @@ interface PrayersProps {
   prayers: PrayerRequest[];
   toggleFavorite: (id: number) => void;
   togglePrayed: (id: number) => void;
-  updateNote: (id: number, note: string) => void;
-  nomesFilhos: string[];
 }
 
-const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed, updateNote }) => {
+const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed }) => {
   const [activeTab, setActiveTab] = useState<'atuais' | 'intercedidos'>('atuais');
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('TODOS');
 
-  // FILTRAGEM ULTRA-ESTÁVEL
+  const categorias = ['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'];
+
   const filteredPrayers = useMemo(() => {
     return prayers.filter(p => {
-      // 1. ABA: Se for 'atuais', isPrayed deve ser falso. Se for 'intercedidos', deve ser verdadeiro.
-      const isDone = p.isPrayed === true;
-      const matchesTab = activeTab === 'atuais' ? !isDone : isDone;
+      // Filtro de Aba
+      const matchesTab = activeTab === 'atuais' ? !p.isPrayed : p.isPrayed;
       if (!matchesTab) return false;
 
-      // 2. CATEGORIA: De-seleção funciona voltando para TODOS
+      // Filtro de Categoria com De-seleção
       if (selectedCategory !== 'TODOS') {
-        const pCat = (p.categoria || "").toUpperCase().trim();
-        const sCat = selectedCategory.toUpperCase().trim();
-        if (pCat !== sCat) return false;
+        if (p.categoria.toUpperCase() !== selectedCategory.toUpperCase()) return false;
       }
-
-      // 3. BUSCA
-      if (searchTerm.trim() !== "") {
-        const term = searchTerm.toLowerCase();
-        if (!(p.texto || "").toLowerCase().includes(term)) return false;
-      }
-
       return true;
     });
-  }, [prayers, activeTab, searchTerm, selectedCategory]);
+  }, [prayers, activeTab, selectedCategory]);
 
   return (
     <div className="pb-44 px-4 space-y-6 bg-[#FFF5F1] min-h-screen">
-      
       <div className="pt-6">
         <h2 className="serif-font text-3xl font-bold text-[#2D1B4D]">Motivos de Oração</h2>
         <p className="text-[10px] font-black text-[#FF4D8C] uppercase tracking-[0.2em]">Mães de joelhos, filhos de pé</p>
       </div>
 
-      {/* ABAS */}
+      {/* SELETOR DE ABAS */}
       <div className="flex bg-white/60 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
         <button 
           onClick={() => setActiveTab('atuais')}
@@ -67,9 +54,9 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         </button>
       </div>
 
-      {/* CATEGORIAS (Lógica de Selecionar/Desmarcar) */}
+      {/* CATEGORIAS */}
       <div className="flex flex-wrap gap-2">
-        {['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'].map(cat => (
+        {categorias.map(cat => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(prev => prev === cat ? 'TODOS' : cat)}
@@ -82,12 +69,12 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         ))}
       </div>
 
-      {/* LISTAGEM DE CARDS */}
+      {/* LISTAGEM */}
       <div className="space-y-6">
         {filteredPrayers.length > 0 ? (
           filteredPrayers.map((prayer) => (
             <div 
-              key={`prayer-card-${prayer.id}-${prayer.texto.substring(0,10)}`} 
+              key={`card-${activeTab}-${prayer.id}`} 
               className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 animate-slideUp"
             >
               <div className="flex justify-between items-center">
@@ -101,13 +88,10 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
 
               <p className="text-[#2D1B4D] text-lg font-medium leading-relaxed">{prayer.texto}</p>
 
-              {/* BOTÃO QUE ALTERNA (Muda de cor e texto na hora) */}
               <button 
                 onClick={() => togglePrayed(prayer.id)}
-                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 ${
-                  prayer.isPrayed 
-                  ? 'bg-green-500 text-white' 
-                  : 'bg-[#FF5722] text-white shadow-lg'
+                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                  prayer.isPrayed ? 'bg-green-500 text-white' : 'bg-[#FF5722] text-white shadow-lg'
                 }`}
               >
                 <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
@@ -116,7 +100,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
             </div>
           ))
         ) : (
-          <div className="text-center py-20 text-gray-300 italic text-sm">Nenhum pedido aqui.</div>
+          <div className="text-center py-20 text-gray-300 italic text-sm">Nenhum pedido encontrado.</div>
         )}
       </div>
     </div>
