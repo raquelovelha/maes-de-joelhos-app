@@ -18,30 +18,32 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
 
   const filteredPrayers = useMemo(() => {
     return prayers.filter(p => {
-      // Filtro de Aba
+      // 1. Filtro de Aba
       if (activeTab === 'atuais' && p.isPrayed) return false;
       if (activeTab === 'realizadas' && !p.isPrayed) return false;
 
-      // Filtro de Busca
-      const term = searchTerm.toLowerCase();
-      const matchesSearch = (p.texto || "").toLowerCase().includes(term) || 
-                            (p.categoria || "").toLowerCase().includes(term);
+      // 2. Filtro de Busca
+      const term = searchTerm.toLowerCase().trim();
+      const matchesSearch = term === '' || 
+        (p.texto || "").toLowerCase().includes(term) || 
+        (p.categoria || "").toLowerCase().includes(term);
 
-      // Filtro de Categoria
-      const matchesCategory = selectedCategory === 'TODOS' || p.categoria === selectedCategory;
+      // 3. Filtro de Categoria
+      const matchesCategory = selectedCategory === 'TODOS' || (p.categoria || "").toUpperCase() === selectedCategory.toUpperCase();
 
       return matchesSearch && matchesCategory;
     });
   }, [prayers, activeTab, searchTerm, selectedCategory]);
 
   return (
-    <div className="pb-40 px-4 space-y-6 bg-[#FFF5F1] min-h-screen">
+    <div className="pb-40 px-4 space-y-6 bg-[#FFF5F1] min-h-screen animate-fadeIn">
+      {/* CABEÇALHO */}
       <div className="pt-6 space-y-1">
         <h2 className="serif-font text-3xl font-bold text-[#2D1B4D]">Motivos de Oração</h2>
         <p className="text-[10px] font-black text-[#FF4D8C] uppercase tracking-[0.2em]">Mães de joelhos, filhos de pé</p>
       </div>
 
-      {/* ABAS ORIGINAIS */}
+      {/* SELETOR DE ABAS */}
       <div className="flex bg-white/50 p-1 rounded-2xl border border-gray-100">
         <button 
           onClick={() => setActiveTab('atuais')}
@@ -57,7 +59,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         </button>
       </div>
 
-      {/* BUSCA */}
+      {/* CAMPO DE BUSCA */}
       <div className="relative">
         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
         <input 
@@ -69,14 +71,14 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         />
       </div>
 
-      {/* CATEGORIAS (FLEX-WRAP) */}
+      {/* CATEGORIAS (QUEBRANDO LINHA) */}
       <div className="flex flex-wrap gap-2">
         {categorias.map(cat => (
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-full text-[10px] font-black tracking-widest transition-all ${
-              selectedCategory === cat ? 'bg-[#FF5722] text-white' : 'bg-white text-gray-400 border border-gray-100'
+            className={`px-4 py-2 rounded-full text-[10px] font-black tracking-widest transition-all border ${
+              selectedCategory === cat ? 'bg-[#FF5722] text-white border-[#FF5722]' : 'bg-white text-gray-400 border-gray-100'
             }`}
           >
             {cat}
@@ -84,32 +86,44 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         ))}
       </div>
 
-      {/* LISTA DE CARDS ESTILO ORIGINAL */}
+      {/* LISTA DE CARDS (USANDO MAP) */}
       <div className="space-y-6">
-        {filteredPrayers.map((prayer) => (
-          <div key={prayer.id} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 relative">
-            <div className="flex justify-between items-center">
-              <span className="bg-[#FFF7ED] text-[#FF5722] text-[9px] font-black px-4 py-1.5 rounded-full uppercase">
-                TEMA: {prayer.categoria}
-              </span>
-              <button onClick={() => toggleFavorite(prayer.id)} className={prayer.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}>
-                <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star text-lg`}></i>
+        {filteredPrayers.length > 0 ? (
+          filteredPrayers.map((prayer) => (
+            <div 
+              key={`${prayer.id}-${prayer.isPrayed}`} 
+              className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 relative animate-slideUp"
+            >
+              <div className="flex justify-between items-center">
+                <span className="bg-[#FFF7ED] text-[#FF5722] text-[9px] font-black px-4 py-1.5 rounded-full uppercase">
+                  TEMA: {prayer.categoria}
+                </span>
+                <button onClick={() => toggleFavorite(prayer.id)} className="transition-transform active:scale-125">
+                  <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star text-lg ${prayer.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
+                </button>
+              </div>
+
+              <p className="text-[#2D1B4D] text-lg font-medium leading-relaxed">{prayer.texto}</p>
+
+              {/* BOTÃO DE CONFIRMAÇÃO (FOCO DA TAREFA) */}
+              <button 
+                onClick={() => togglePrayed(prayer.id)}
+                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-md ${
+                  prayer.isPrayed 
+                  ? 'bg-[#4CAF50] text-white' // VERDE se selecionado
+                  : 'bg-[#FF5722] text-white shadow-orange-100' // LARANJA se não selecionado
+                }`}
+              >
+                <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
+                {prayer.isPrayed ? 'PEDIDO INTERCEDIDO' : 'CONFIRMAR ORAÇÃO'}
               </button>
             </div>
-
-            <p className="text-[#2D1B4D] text-lg font-medium leading-relaxed">{prayer.texto}</p>
-
-            <button 
-              onClick={() => togglePrayed(prayer.id)}
-              className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
-                prayer.isPrayed ? 'bg-green-500 text-white' : 'bg-[#FF5722] text-white shadow-lg'
-              }`}
-            >
-              <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
-              {prayer.isPrayed ? 'PEDIDO INTERCEDIDO' : 'CONFIRMAR ORAÇÃO'}
-            </button>
+          ))
+        ) : (
+          <div className="text-center py-20 text-gray-400 italic text-sm">
+            Nenhum pedido encontrado.
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
