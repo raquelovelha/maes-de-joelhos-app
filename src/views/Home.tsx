@@ -14,14 +14,14 @@ const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
   const pedidosHoje = isMesmoDia ? (profile?.pedidosConcluidosHoje || 0) : 0;
   const tempoHoje = isMesmoDia ? (profile?.minutosHoje || 0) : 0;
 
-  // URLs das Logos (Agora com o seu link direto do PostIMG)
+  // Links diretos do PostIMG (Garantia de visualização)
   const logoGC = "https://i.postimg.cc/MKLSGrq8/GC-horizontal-cores-gradiente-fundoclaro.png";
-  const logoMPC = "https://images.weserv.nl/?url=mpc.org.br/wp-content/uploads/2021/04/logo-mpc-brasil.png";
+  const logoMPC = "https://i.postimg.cc/ryDdx9qp/logo-Logo-P-B-Completa.png";
 
   return (
     <div className="space-y-6 animate-fadeIn pb-32 px-4">
       
-      {/* PALAVRA DE HOJE */}
+      {/* CARD INTERATIVO: VAMOS ORAR? */}
       <div 
         onClick={() => onNavigate && onNavigate('prayers')}
         className="bg-[#F3E8FF] rounded-[3rem] p-8 shadow-sm active:scale-[0.98] transition-all cursor-pointer border border-purple-100"
@@ -66,12 +66,12 @@ const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
       </div>
 
       {/* RODAPÉ INSTITUCIONAL COM LOGO MPC */}
-      <div className="text-center space-y-4 pt-4 px-6">
+      <div className="text-center space-y-4 pt-4 px-6 pb-6">
         <p className="text-[11px] font-black text-purple-800 uppercase italic tracking-[0.15em]">
           Mães de joelhos, filhos de pé!
         </p>
         
-        <div className="space-y-4 flex flex-col items-center">
+        <div className="space-y-5 flex flex-col items-center">
           <p className="text-[9px] text-gray-400 font-bold uppercase leading-relaxed max-w-[280px]">
             Somos um departamento da MPC (Mocidade Para Cristo) e trabalhamos juntamente com todos os departamentos desta missão.
           </p>
@@ -80,7 +80,8 @@ const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
             <img 
               src={logoMPC} 
               alt="MPC Brasil" 
-              className="h-8 w-auto object-contain opacity-40 grayscale"
+              className="h-10 w-auto object-contain block mx-auto"
+              style={{ filter: 'none' }} // Garante que a logo apareça em suas cores originais
             />
           </div>
         </div>
