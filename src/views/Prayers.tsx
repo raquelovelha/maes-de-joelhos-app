@@ -6,175 +6,131 @@ interface PrayersProps {
   toggleFavorite: (id: number) => void;
   togglePrayed: (id: number) => void;
   updateNote: (id: number, note: string) => void;
-  nomesFilhos?: string[];
+  nomesFilhos: string[];
 }
 
-const Prayers: React.FC<PrayersProps> = ({ 
-  prayers, 
-  toggleFavorite, 
-  togglePrayed, 
-  updateNote, 
-  nomesFilhos = [] 
-}) => {
+const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed, updateNote }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [activeTab, setActiveTab] = useState<'atuais' | 'realizadas'>('atuais');
+  const [selectedCategory, setSelectedCategory] = useState('TODOS');
 
-  // Proteção contra duplicação e ordenação
-  const uniquePrayers = useMemo(() => {
-    const seen = new Set();
+  // Categorias principais para o filtro (Agora com rolagem lateral)
+  const categorias = ['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'];
+
+  // Lógica de Filtro e Busca Corrigida
+  const filteredPrayers = useMemo(() => {
     return prayers.filter(p => {
-      const duplicate = seen.has(p.id);
-      seen.add(p.id);
-      return !duplicate;
-    }).sort((a, b) => a.id - b.id);
-  }, [prayers]);
+      const pTexto = p.texto?.toLowerCase() || "";
+      const pCat = p.categoria?.toLowerCase() || "";
+      const pVer = p.versiculo?.toLowerCase() || "";
+      const term = searchTerm.toLowerCase();
 
-  const categories = ['Todos', ...Array.from(new Set(uniquePrayers.map(p => p.categoria)))];
-
-  // Lógica de Filtro: Categoria + Busca por palavra-chave (ex: "escola")
-  const filteredPrayers = uniquePrayers.filter(p => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      p.texto.toLowerCase().includes(searchLower) || 
-      p.categoria.toLowerCase().includes(searchLower) ||
-      (p.personalNotes && p.personalNotes.toLowerCase().includes(searchLower)); // Busca também nas notas
-    
-    const matchesCategory = selectedCategory === 'Todos' || p.categoria === selectedCategory;
-    
-    // Filtra por aba (Atuais vs Realizadas)
-    const matchesTab = activeTab === 'atuais' ? !p.isPrayed : p.isPrayed;
-
-    return matchesSearch && matchesCategory && matchesTab;
-  });
-
-  const handleShare = (p: PrayerRequest) => {
-    const text = `*Desperta Débora - Motivo de Oração*\n\n*Tema:* ${p.categoria}\n\n*Oração:* ${p.texto}\n\n📖 _${p.versiculo}_`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, '_blank');
-  };
+      const matchesSearch = pTexto.includes(term) || pCat.includes(term) || pVer.includes(term);
+      const matchesCategory = selectedCategory === 'TODOS' || p.categoria.toUpperCase() === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [prayers, searchTerm, selectedCategory]);
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-24 px-2">
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="serif-font text-3xl font-bold text-brand-dark">Motivos de Oração</h2>
-          <p className="text-[10px] text-[#FF4500] font-black uppercase tracking-[0.2em] mt-1">Mães de joelhos, filhos de pé</p>
-        </div>
-
-        {/* SELETOR DE ABAS: ATUAIS VS REALIZADAS */}
-        <div className="flex bg-gray-100/50 p-1 rounded-2xl">
-          <button 
-            onClick={() => setActiveTab('atuais')}
-            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'atuais' ? 'bg-white text-[#FF4500] shadow-sm' : 'text-gray-400'}`}
-          >
-            Motivos Atuais
-          </button>
-          <button 
-            onClick={() => setActiveTab('realizadas')}
-            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'realizadas' ? 'bg-white text-[#FF4500] shadow-sm' : 'text-gray-400'}`}
-          >
-            Orações Realizadas
-          </button>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="relative group">
-            <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-orange-300"></i>
-            <input 
-              type="text" 
-              placeholder="Buscar (ex: escola, saúde, proteção)..." 
-              className="w-full bg-white border border-orange-100 rounded-[2rem] py-4 pl-12 pr-6 text-sm focus:outline-none shadow-sm transition-all"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 -mx-2 px-2">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.15em] transition-all border-2 shadow-sm whitespace-nowrap ${
-                  selectedCategory === cat 
-                  ? 'bg-[#FF4500] text-white border-[#FF4500]' 
-                  : 'bg-white text-gray-400 border-orange-50/50'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
+    <div className="pb-40 px-4 space-y-6 animate-fadeIn">
+      {/* CABEÇALHO */}
+      <div className="space-y-2">
+        <h2 className="serif-font text-3xl font-bold text-brand-dark">Motivos de Oração</h2>
+        <p className="text-[10px] font-black text-brand-rose uppercase tracking-[0.2em]">Mães de joelhos, filhos de pé</p>
       </div>
 
+      {/* BARRA DE PESQUISA */}
+      <div className="relative">
+        <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-brand-rose/40"></i>
+        <input 
+          type="text"
+          placeholder="Buscar (ex: escola, saúde, proteção)..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full bg-white border border-gray-100 rounded-2xl py-4 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-brand-rose/20 outline-none transition-all text-sm"
+        />
+      </div>
+
+      {/* CATEGORIAS COM SCROLL LATERAL - CORREÇÃO DE QUEBRA */}
+      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 scroll-smooth">
+        {categorias.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`whitespace-nowrap px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest transition-all shrink-0 ${
+              selectedCategory === cat 
+              ? 'bg-brand-orange text-white shadow-lg shadow-orange-200' 
+              : 'bg-white text-gray-400 border border-gray-100'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
+      {/* LISTA DE PEDIDOS */}
       <div className="space-y-6">
         {filteredPrayers.length > 0 ? (
-          filteredPrayers.map(p => (
-            <div key={p.id} className={`bg-white rounded-[2.5rem] p-6 border shadow-sm transition-all relative overflow-hidden ${p.isPrayed ? 'border-green-100 bg-green-50/10' : 'border-orange-50'}`}>
-              
-              <div className="flex items-start justify-between mb-5">
-                <div className={`px-4 py-1.5 rounded-full border ${p.isPrayed ? 'bg-green-50 border-green-100' : 'bg-orange-50 border-orange-100'}`}>
-                   <span className={`text-[10px] font-black uppercase tracking-tighter ${p.isPrayed ? 'text-green-600' : 'text-[#FF4500]'}`}>
-                     Tema: {p.categoria}
-                   </span>
-                </div>
+          filteredPrayers.map((prayer) => (
+            <div key={prayer.id} className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-50 space-y-6 relative overflow-hidden">
+              <div className="flex justify-between items-center">
+                <span className="bg-orange-50 text-orange-600 text-[9px] font-black px-4 py-1.5 rounded-full tracking-tighter uppercase">
+                  TEMA: {prayer.categoria}
+                </span>
                 <div className="flex gap-4">
-                  <button onClick={() => toggleFavorite(p.id)} className={`transition-all hover:scale-110 ${p.isFavorite ? 'text-yellow-400' : 'text-gray-200'}`}>
-                    <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star text-xl`}></i>
+                  <button onClick={() => toggleFavorite(prayer.id)} className={prayer.isFavorite ? 'text-brand-rose' : 'text-gray-200'}>
+                    <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star`}></i>
                   </button>
-                  <button onClick={() => handleShare(p)} className="text-gray-200 hover:text-green-500 transition-colors">
-                    <i className="fa-solid fa-share-nodes text-xl"></i>
+                  <button className="text-gray-200">
+                    <i className="fa-solid fa-share-nodes"></i>
                   </button>
                 </div>
               </div>
 
-              <div className="relative mb-6">
-                <i className={`fa-solid fa-quote-left absolute -top-2 -left-2 text-3xl -z-10 ${p.isPrayed ? 'text-green-100' : 'text-orange-100'}`}></i>
-                <p className="text-base text-brand-dark font-medium leading-relaxed pl-2">
-                  {p.texto}
+              <p className="text-gray-700 text-lg leading-relaxed font-medium">
+                {prayer.texto}
+              </p>
+
+              {/* A PALAVRA DE DEUS */}
+              <div className="bg-[#FFF7ED] rounded-2xl p-5 border-l-4 border-brand-orange">
+                <p className="text-[10px] font-black text-brand-orange uppercase mb-2 flex items-center gap-2">
+                  <i className="fa-solid fa-book-open"></i> A PALAVRA DE DEUS
                 </p>
-              </div>
-              
-              <div className={`p-5 rounded-r-3xl mb-6 shadow-inner border-l-4 ${p.isPrayed ? 'bg-gradient-to-r from-green-50 to-white border-green-500' : 'bg-gradient-to-r from-orange-50 to-white border-[#FF4500]'}`}>
-                <div className={`flex items-center gap-2 mb-1 ${p.isPrayed ? 'text-green-600' : 'text-[#FF4500]'}`}>
-                  <i className="fa-solid fa-book-bible text-[10px]"></i>
-                  <span className="text-[9px] font-black uppercase tracking-widest">A Palavra de Deus</span>
-                </div>
-                <p className="text-sm text-brand-dark italic font-serif leading-snug">
-                  "{p.versiculo}"
+                <p className="text-sm italic text-gray-600 leading-relaxed">
+                  "{prayer.versiculo}"
                 </p>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-gray-50">
-                <div className="relative">
-                  <textarea 
-                    placeholder="Anote o que Deus falar ao seu coração..."
-                    className="w-full bg-gray-50/50 border border-gray-100 rounded-[1.5rem] p-4 text-xs focus:outline-none focus:ring-2 h-24 resize-none transition-all"
-                    value={p.personalNotes || ''}
-                    onChange={(e) => updateNote(p.id, e.target.value)}
-                  />
-                </div>
-
-                <button 
-                  onClick={() => togglePrayed(p.id)}
-                  className={`w-full py-4.5 rounded-full text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all ${
-                    p.isPrayed 
-                    ? 'bg-green-500 text-white shadow-lg shadow-green-100' 
-                    : 'bg-[#FF4500] text-white shadow-lg shadow-orange-200 active:scale-95'
-                  }`}
-                >
-                  <i className={`fa-solid ${p.isPrayed ? 'fa-rotate-left' : 'fa-pray'}`}></i>
-                  {p.isPrayed ? 'REATIVAR ORAÇÃO' : 'CONFIRMAR ORAÇÃO'}
-                </button>
+              {/* NOTAS PESSOAIS */}
+              <div className="pt-2">
+                <textarea 
+                  placeholder="Anote o que Deus falar ao seu coração..."
+                  value={prayer.personalNotes || ''}
+                  onChange={(e) => updateNote(prayer.id, e.target.value)}
+                  className="w-full bg-transparent border-b border-gray-100 py-2 text-sm focus:border-brand-rose outline-none resize-none min-h-[40px] italic text-gray-400"
+                />
               </div>
+
+              {/* BOTÃO DE CONFIRMAÇÃO */}
+              <button 
+                onClick={() => togglePrayed(prayer.id)}
+                className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-[0.97] ${
+                  prayer.isPrayed 
+                  ? 'bg-green-500 text-white shadow-lg shadow-green-100' 
+                  : 'bg-brand-orange text-white shadow-lg shadow-orange-200'
+                }`}
+              >
+                <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
+                {prayer.isPrayed ? 'ORAÇÃO REALIZADA' : 'CONFIRMAR ORAÇÃO'}
+              </button>
             </div>
           ))
         ) : (
-          <div className="text-center py-24 bg-white rounded-[3rem] border-2 border-dashed border-orange-100">
-            <p className="text-sm font-black text-gray-300 uppercase tracking-widest">
-              {activeTab === 'atuais' ? 'Nenhum motivo pendente' : 'Nenhuma oração realizada ainda'}
-            </p>
+          <div className="text-center py-20 flex flex-col items-center">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+              <i className="fa-solid fa-magnifying-glass text-gray-200 text-2xl"></i>
+            </div>
+            <p className="text-gray-400 text-sm font-medium italic">Nenhum pedido encontrado para "{searchTerm}"</p>
           </div>
         )}
       </div>
