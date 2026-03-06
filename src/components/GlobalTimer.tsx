@@ -1,55 +1,52 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { usePrayers } from '../hooks/usePrayers';
+import { useTimer } from '../contexts/TimerContext'; // Importante para sincronizar
 
 const GlobalTimer: React.FC = () => {
-  const [seconds, setSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
+  const { seconds, isRunning, toggleTimer, resetTimer } = useTimer();
   const { saveTime } = usePrayers();
-
-  useEffect(() => {
-    let interval: any;
-    if (isRunning) {
-      interval = setInterval(() => {
-        setSeconds(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning]);
 
   const handleStop = async () => {
     const minutosDecorridos = Math.floor(seconds / 60);
     if (minutosDecorridos > 0) {
       await saveTime(minutosDecorridos);
     }
-    setIsRunning(false);
-    setSeconds(0);
+    toggleTimer(); // Para o timer
+    resetTimer();  // Zera após salvar
   };
 
   const formatTime = (totalSeconds: number) => {
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
-    return `${hrs > 0 ? hrs + ':' : ''}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Só aparece se estiver rodando ou se houver tempo decorrido
+  if (!isRunning && seconds === 0) return null;
+
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
-      <div className="bg-brand-dark text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-4 border border-white/10 backdrop-blur-md">
-        <div className="flex flex-col">
-          <span className="text-[8px] font-black uppercase tracking-widest text-white/50">Intercedendo</span>
-          <span className="font-mono text-lg font-bold">{formatTime(seconds)}</span>
+    <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-md animate-slideUp">
+      <div className="bg-gray-900/90 backdrop-blur-md text-white px-6 py-4 rounded-[2rem] shadow-2xl flex items-center justify-between border border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <div className={`w-3 h-3 bg-orange-500 rounded-full ${isRunning ? 'animate-ping' : ''}`}></div>
+            <div className="absolute inset-0 w-3 h-3 bg-orange-500 rounded-full"></div>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-widest text-orange-400">Intercedendo</span>
+            <span className="font-mono text-2xl font-black">{formatTime(seconds)}</span>
+          </div>
         </div>
         
         <button 
-          onClick={() => isRunning ? handleStop() : setIsRunning(true)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRunning ? 'bg-red-500 hover:bg-red-600' : 'bg-[#FF4500] hover:bg-orange-600'}`}
+          onClick={handleStop}
+          className="bg-white/10 hover:bg-white/20 p-4 rounded-2xl transition-all active:scale-95"
         >
-          <i className={`fa-solid ${isRunning ? 'fa-stop' : 'fa-play'}`}></i>
+          <i className="fa-solid fa-stop text-xl"></i>
         </button>
       </div>
     </div>
   );
 };
 
-// ESSA LINHA ABAIXO É A QUE ESTÁ FALTANDO E CAUSA O ERRO:
-export default GlobalTimer;
+export default GlobalTimer; // Resolve o erro de build
