@@ -1,12 +1,11 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface HomeProps {
   profile?: any;
+  onNavigate?: (tab: string) => void; // Função para trocar de aba
 }
 
-const Home: React.FC<HomeProps> = ({ profile }) => {
-  const navigate = useNavigate();
+const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
   
   // Lógica de data para resetar os contadores da Home
   const hoje = new Date().toLocaleDateString('pt-BR');
@@ -21,7 +20,7 @@ const Home: React.FC<HomeProps> = ({ profile }) => {
       
       {/* CARD INTERATIVO: VAMOS ORAR? */}
       <div 
-        onClick={() => navigate('/oracoes')} // Certifique-se que a rota das orações seja esta
+        onClick={() => onNavigate && onNavigate('oracoes')} // Troca para a aba de orações
         className="bg-gradient-to-br from-orange-50 to-orange-100/80 rounded-[3rem] p-8 border border-orange-200/50 shadow-sm active:scale-[0.98] transition-all cursor-pointer group"
       >
         <div className="flex justify-between items-start mb-4">
@@ -66,8 +65,13 @@ const Home: React.FC<HomeProps> = ({ profile }) => {
             <img 
               src="https://geracaocompromisso.com/wp-content/uploads/2022/02/Logo-GC-site-01.png" 
               alt="Geração Compromisso" 
-              className="w-full max-w-[180px] h-auto object-contain"
-              style={{ display: 'block', minHeight: '40px' }}
+              className="w-full max-w-[180px] h-auto object-contain block mx-auto"
+              style={{ minHeight: '50px' }}
+              onLoad={() => console.log("Logo carregada")}
+              onError={(e) => {
+                console.log("Erro na logo, tentando link alternativo");
+                (e.target as HTMLImageElement).src = "https://geracaocompromisso.com/wp-content/uploads/2022/02/Logo-GC-site-01.png";
+              }}
             />
           </div>
         </div>
