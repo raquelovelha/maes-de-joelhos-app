@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth'; 
-import { doc, getDoc, onSnapshot } from 'firebase/firestore'; 
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore'; 
 import { db } from './firebase'; 
 
 // Providers e Componentes Globais
@@ -46,17 +46,33 @@ const App: React.FC = () => {
   // Observador de Autenticação e Dados do Firestore em Tempo Real
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       
       if (currentUser) {
-        // Escuta as mudanças no documento do usuário (minutos, pedidos, etc)
         const docRef = doc(db, "usuarios", currentUser.uid);
+        
+        // Verifica se o documento existe, se não, cria um inicial
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            nome: currentUser.displayName || "Missionária",
+            minutosIntercedidos: 0,
+            diasConsecutivos: 0,
+            totalDias: 0,
+            criadoEm: new Date().toISOString()
+          });
+        }
+
         const unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            // Atualiza o perfil e os stats em tempo real
-            setProfile(prev => ({ ...prev, nome: data.nome, ...data }));
+            setProfile(prev => ({ 
+              ...prev, 
+              name: data.nome || prev.name,
+              ...data 
+            }));
+            
             setStats({
               streak: data.diasConsecutivos || 0,
               totalMinutes: data.minutosIntercedidos || 0,
@@ -76,56 +92,64 @@ const App: React.FC = () => {
     return () => unsubscribeAuth();
   }, []);
 
+  // Hooks Customizados
   const { children, addChild, deleteChild, addRequest, toggleRequestStatus, registerPrayerTime } = useChildren([]);
   const { prayers, toggleFavorite, togglePrayed, updateNote, loading: prayersLoading } = usePrayers();
 
+  // Tela de carregamento ou Registro
   if (isLoading || (user && prayersLoading)) return <SplashScreen />;
   if (!user) return <RegisterView />;
 
   // MAPEAMENTO DAS PÁGINAS (VIEWS)
-  const views: Record<string, React.ReactNode> = {
-    // HOME atualizada para receber o profile e a função de navegar
-    home: (
-      <HomeView 
-        profile={profile} 
-        onNavigate={setActiveTab} 
-      />
-    ),
-    prayers: (
-      <PrayersView 
-        prayers={prayers} 
-        toggleFavorite={toggleFavorite} 
-        togglePrayed={togglePrayed} 
-        updateNote={updateNote} 
-        nomesFilhos={children.map(c => c.name)} 
-      />
-    ),
-    filhos: (
-      <FilhosView 
-        children={children} 
-        onAddChild={addChild} 
-        onDeleteChild={deleteChild} 
-        onAddRequest={addRequest} 
-        onToggleRequest={toggleRequestStatus} 
-        onRegisterPrayer={registerPrayerTime} 
-        onAccept={() => {}} 
-      />
-    ),
-    community: <CommunityView />,
-    timer: <Timer stats={stats} setStats={setStats} onFinish={() => setActiveTab('home')} />,
-    profile: <Profile profile={profile} stats={stats} setProfile={setProfile} />
+  const renderView = () => {
+    switch (activeTab) {
+      case 'home':
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      case 'prayers':
+        return (
+          <PrayersView 
+            prayers={prayers} 
+            toggleFavorite={toggleFavorite} 
+            togglePrayed={togglePrayed} 
+            updateNote={updateNote} 
+            nomesFilhos={children.map(c => c.name)} 
+          />
+        );
+      case 'filhos':
+        return (
+          <FilhosView 
+            children={children} 
+            onAddChild={addChild} 
+            onDeleteChild={deleteChild} 
+            onAddRequest={addRequest} 
+            onToggleRequest={toggleRequestStatus} 
+            onRegisterPrayer={registerPrayerTime} 
+            onAccept={() => {}} 
+          />
+        );
+      case 'community':
+        return <CommunityView />;
+      case 'timer':
+        return <Timer stats={stats} setStats={setStats} onFinish={() => setActiveTab('home')} />;
+      case 'profile':
+        return <Profile profile={profile} stats={stats} setProfile={setProfile} />;
+      default:
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
+    }
   };
 
   return (
     <TimerProvider> 
       <div className="relative min-h-screen bg-[#FFF5F1]">
+        {/* O GlobalTimer agora consegue acessar o contexto do TimerProvider */}
         <GlobalTimer /> 
+        
         <Layout 
           activeTab={activeTab} 
           onTabChange={setActiveTab} 
           userProfile={profile} 
         >
-          {views[activeTab]}
+          {renderView()}
         </Layout>
       </div>
     </TimerProvider>

@@ -4,7 +4,7 @@ import { PrayerRequest } from '../types';
 interface PrayersProps {
   prayers: PrayerRequest[];
   toggleFavorite: (id: number) => void;
-  togglePrayed: (id: number) => void;
+  togglePrayed: (id: number) => void; // Esta função vem do App.tsx
   updateNote: (id: number, note: string) => void;
   nomesFilhos: string[];
 }
@@ -16,6 +16,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
 
   const categorias = ['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'];
 
+  // FILTRO DE BUSCA E ABAS
   const filteredPrayers = useMemo(() => {
     return prayers.filter(p => {
       // 1. Filtro de Aba
@@ -29,7 +30,8 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         (p.categoria || "").toLowerCase().includes(term);
 
       // 3. Filtro de Categoria
-      const matchesCategory = selectedCategory === 'TODOS' || (p.categoria || "").toUpperCase() === selectedCategory.toUpperCase();
+      const matchesCategory = selectedCategory === 'TODOS' || 
+        (p.categoria || "").toUpperCase() === selectedCategory.toUpperCase();
 
       return matchesSearch && matchesCategory;
     });
@@ -37,6 +39,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
 
   return (
     <div className="pb-40 px-4 space-y-6 bg-[#FFF5F1] min-h-screen animate-fadeIn">
+      
       {/* CABEÇALHO */}
       <div className="pt-6 space-y-1">
         <h2 className="serif-font text-3xl font-bold text-[#2D1B4D]">Motivos de Oração</h2>
@@ -64,14 +67,14 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
         <input 
           type="text"
-          placeholder="Buscar..."
+          placeholder="Buscar oração..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full bg-white border border-gray-100 rounded-2xl py-4 pl-12 pr-4 shadow-sm outline-none text-sm"
         />
       </div>
 
-      {/* CATEGORIAS (QUEBRANDO LINHA) */}
+      {/* CATEGORIAS */}
       <div className="flex flex-wrap gap-2">
         {categorias.map(cat => (
           <button
@@ -86,7 +89,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         ))}
       </div>
 
-      {/* LISTA DE CARDS (USANDO MAP) */}
+      {/* LISTA DE CARDS */}
       <div className="space-y-6">
         {filteredPrayers.length > 0 ? (
           filteredPrayers.map((prayer) => (
@@ -95,23 +98,31 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
               className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 relative animate-slideUp"
             >
               <div className="flex justify-between items-center">
-                <span className="bg-[#FFF7ED] text-[#FF5722] text-[9px] font-black px-4 py-1.5 rounded-full uppercase">
+                <span className="bg-[#FFF7ED] text-[#FF5722] text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest">
                   TEMA: {prayer.categoria}
                 </span>
-                <button onClick={() => toggleFavorite(prayer.id)} className="transition-transform active:scale-125">
+                <button 
+                  onClick={() => toggleFavorite(prayer.id)} 
+                  className="transition-transform active:scale-125 p-1"
+                >
                   <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star text-lg ${prayer.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
                 </button>
               </div>
 
-              <p className="text-[#2D1B4D] text-lg font-medium leading-relaxed">{prayer.texto}</p>
+              <p className="text-[#2D1B4D] text-lg font-medium leading-relaxed">
+                {prayer.texto}
+              </p>
 
-              {/* BOTÃO DE CONFIRMAÇÃO (FOCO DA TAREFA) */}
+              {/* BOTÃO COM LÓGICA DE CLIQUE REFORÇADA */}
               <button 
-                onClick={() => togglePrayed(prayer.id)}
-                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-md ${
+                onClick={async () => {
+                  console.log("Clicou no ID:", prayer.id); // Para você ver no console se o clique funciona
+                  await togglePrayed(prayer.id);
+                }}
+                className={`w-full py-5 rounded-[1.5rem] font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-md ${
                   prayer.isPrayed 
-                  ? 'bg-[#4CAF50] text-white' // VERDE se selecionado
-                  : 'bg-[#FF5722] text-white shadow-orange-100' // LARANJA se não selecionado
+                  ? 'bg-[#4CAF50] text-white' // VERDE
+                  : 'bg-[#FF5722] text-white shadow-orange-100' // LARANJA
                 }`}
               >
                 <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
