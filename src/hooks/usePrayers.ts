@@ -1,98 +1,91 @@
 import { useState, useCallback, useEffect } from 'react';
 import { db } from '../firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, getDocs, query, orderBy, doc, setDoc, getDoc, updateDoc, increment } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, setDoc, getDoc } from 'firebase/firestore';
 import { PrayerRequest } from '../types';
 
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
-  const [loading, setLoading] = useState(true);
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
   const loadData = async () => {
     if (!userId) return;
     try {
-      setLoading(true);
+      // Busca a coleção de sugestões
       const qSugestoes = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc"));
       const snapSugestoes = await getDocs(qSugestoes);
       
-      const userDocRef = doc(db, "user_progress", userId);
-      const userDocSnap = await getDoc(userDocRef);
+      // Busca o progresso do usuário (favoritos, orados, notas)
+      const userDocSnap = await getDoc(doc(db, "user_progress", userId));
       const userProgress = userDocSnap.exists() ? userDocSnap.data().prayers || {} : {};
 
       const combinedData = snapSugestoes.docs.map(docSnap => {
         const data = docSnap.data();
-        const diaId = data.dia; 
-        const progress = userProgress[diaId] || {};
+        const id = data.dia || docSnap.id; // Usa o 'dia' como ID principal
+        const progress = userProgress[id] || {};
 
+        // Mapeamento robusto para não vir vazio
         return {
-          id: diaId,
-          categoria: data.categoria || "GERAL",
-          texto: data.texto || "",
-          versiculo: data.versiculo || "",
+          id: id,
+          category: data.categoria || data.category || "GERAL",
+          title: data.titulo || "Oração",
+          description: data.texto || data.description || "", // Garante que o texto apareça
+          verse: data.versiculo || data.verse || "",
           isPrayed: !!progress.isPrayed,
           isFavorite: !!progress.isFavorite,
           personalNotes: progress.personalNotes || ''
         } as PrayerRequest;
       });
       setPrayers(combinedData);
-    } catch (error) {
-      console.error("Erro ao carregar:", error);
-    } finally {
-      setLoading(false);
+    } catch (e) { 
+      console.error("Erro ao carregar orações:", e); 
     }
   };
 
   useEffect(() => { loadData(); }, [userId]);
 
-  const syncWithFirebase = async (updatedList: PrayerRequest[]) => {
+  const togglePrayed = useCallback(async (id: any) => {
     if (!userId) return;
-    try {
-      const userDocRef = doc(db, "user_progress", userId);
-      const progressMap = updatedList.reduce((acc: any, p) => {
+    setPrayers(prev => {
+      const newList = prev.map(p => String(p.id) === String(id) ? { ...p, isPrayed: !p.isPrayed } : p);
+      
+      // Salva no Firebase
+      const progressMap = newList.reduce((acc: any, p) => {
         acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
         return acc;
       }, {});
-      await setDoc(userDocRef, { prayers: progressMap }, { merge: true });
-    } catch (e) { console.error("Erro ao sincronizar:", e); }
-  };
-
-  const togglePrayed = useCallback(async (id: any) => {
-    if (!userId) return;
-    let isNowPrayed = false;
-
-    setPrayers(prev => {
-      const newList = prev.map(p => {
-        if (String(p.id) === String(id)) {
-          isNowPrayed = !p.isPrayed;
-          return { ...p, isPrayed: isNowPrayed };
-        }
-        return p;
-      });
-      syncWithFirebase(newList);
+      
+      setDoc(doc(db, "user_progress", userId), { prayers: progressMap }, { merge: true });
       return newList;
     });
-
-    if (isNowPrayed) {
-      try {
-        const hoje = new Date().toLocaleDateString('pt-BR');
-        const userRef = doc(db, "usuarios", userId);
-        await updateDoc(userRef, { 
-          pedidosTotalHistorico: increment(1),
-          dataUltimaOracao: hoje
-        });
-      } catch (e) { console.warn("Doc de usuário não encontrado para stats"); }
-    }
   }, [userId]);
 
-  const toggleFavorite = useCallback((id: any) => {
+  const toggleFavorite = useCallback(async (id: any) => {
+    if (!userId) return;
     setPrayers(prev => {
       const newList = prev.map(p => String(p.id) === String(id) ? { ...p, isFavorite: !p.isFavorite } : p);
-      syncWithFirebase(newList);
+      const progressMap = newList.reduce((acc: any, p) => {
+        acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
+        return acc;
+      }, {});
+      setDoc(doc(db, "user_progress", userId), { prayers: progressMap }, { merge: true });
       return newList;
     });
   }, [userId]);
 
-  return { prayers, loading, togglePrayed, toggleFavorite };
+  const updateNote = useCallback(async (id: any, note: string) => {
+    if (!userId) return;
+    setPrayers(prev => {
+      const newList = prev.map(p => String(p.id) === String(id) ? { ...p, personalNotes: note } : p);
+      const progressMap = newList.reduce((acc: any, p) => {
+        acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
+        return acc;
+      }, {});
+      setDoc(doc(db, "user_progress", userId), { prayers: progressMap }, { merge: true });
+      return newList;
+    });
+  }, [userId]);
+
+  return { prayers, togglePrayed, toggleFavorite, updateNote };
 };
