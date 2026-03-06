@@ -14,13 +14,14 @@ const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
   const pedidosHoje = isMesmoDia ? (profile?.pedidosConcluidosHoje || 0) : 0;
   const tempoHoje = isMesmoDia ? (profile?.minutosHoje || 0) : 0;
 
-  // URL da Logo com proxy para garantir visualização
-  const logoUrl = "https://images.weserv.nl/?url=geracaocompromisso.com/wp-content/uploads/2022/02/Logo-GC-site-01.png";
+  // URLs das Logos (Agora com o seu link direto do PostIMG)
+  const logoGC = "https://i.postimg.cc/MKLSGrq8/GC-horizontal-cores-gradiente-fundoclaro.png";
+  const logoMPC = "https://images.weserv.nl/?url=mpc.org.br/wp-content/uploads/2021/04/logo-mpc-brasil.png";
 
   return (
     <div className="space-y-6 animate-fadeIn pb-32 px-4">
       
-      {/* PALAVRA DE HOJE - Cores Originais */}
+      {/* PALAVRA DE HOJE */}
       <div 
         onClick={() => onNavigate && onNavigate('prayers')}
         className="bg-[#F3E8FF] rounded-[3rem] p-8 shadow-sm active:scale-[0.98] transition-all cursor-pointer border border-purple-100"
@@ -35,15 +36,15 @@ const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
         </div>
       </div>
 
-      {/* STATUS DO DIA - Formato Original */}
+      {/* STATUS DO DIA */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-[#FFF7ED] rounded-[2.5rem] p-6 flex flex-col items-center text-center border border-orange-100">
+        <div className="bg-[#FFF7ED] rounded-[2.5rem] p-6 flex flex-col items-center text-center border border-orange-100 shadow-sm">
           <i className="fa-solid fa-fire text-orange-500 mb-2"></i>
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Pedidos Hoje</p>
           <p className="text-2xl font-black text-orange-600">{pedidosHoje}</p>
         </div>
 
-        <div className="bg-[#FDF2F8] rounded-[2.5rem] p-6 flex flex-col items-center text-center border border-pink-100">
+        <div className="bg-[#FDF2F8] rounded-[2.5rem] p-6 flex flex-col items-center text-center border border-pink-100 shadow-sm">
           <i className="fa-solid fa-clock text-pink-500 mb-2"></i>
           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Tempo Hoje</p>
           <p className="text-2xl font-black text-pink-600">{tempoHoje}m</p>
@@ -52,33 +53,36 @@ const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
 
       {/* SEÇÃO GERAÇÃO COMPROMISSO */}
       <div className="space-y-3">
-        <div className="bg-[#5c00b8] rounded-[2.5rem] p-4 shadow-lg">
-          <p className="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-3 ml-4">Filhos de oração...</p>
-          <div className="bg-white rounded-[2rem] py-8 flex items-center justify-center px-6">
+        <div className="bg-[#5c00b8] rounded-[2.5rem] p-4 shadow-xl">
+          <p className="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-3 ml-4 italic font-black">Filhos de oração...</p>
+          <div className="bg-white rounded-[2rem] py-10 flex items-center justify-center px-8 min-h-[120px]">
             <img 
-              src={logoUrl} 
+              src={logoGC} 
               alt="Geração Compromisso" 
-              className="w-full max-w-[160px] h-auto object-contain"
+              className="w-full max-w-[200px] h-auto object-contain block mx-auto"
             />
           </div>
         </div>
       </div>
 
-      {/* RODAPÉ INSTITUCIONAL COMPLETO */}
+      {/* RODAPÉ INSTITUCIONAL COM LOGO MPC */}
       <div className="text-center space-y-4 pt-4 px-6">
-        <p className="text-[11px] font-black text-purple-800 uppercase italic tracking-widest">
+        <p className="text-[11px] font-black text-purple-800 uppercase italic tracking-[0.15em]">
           Mães de joelhos, filhos de pé!
         </p>
-        <div className="space-y-1">
-          <p className="text-[9px] text-gray-400 font-bold uppercase leading-relaxed">
-            Somos um departamento da MPC (Mocidade Para Cristo)
+        
+        <div className="space-y-4 flex flex-col items-center">
+          <p className="text-[9px] text-gray-400 font-bold uppercase leading-relaxed max-w-[280px]">
+            Somos um departamento da MPC (Mocidade Para Cristo) e trabalhamos juntamente com todos os departamentos desta missão.
           </p>
-          <p className="text-[9px] text-gray-400 font-bold uppercase leading-relaxed">
-            e trabalhamos juntamente com todos os
-          </p>
-          <p className="text-[9px] text-gray-400 font-bold uppercase leading-relaxed">
-            departamentos desta missão.
-          </p>
+          
+          <div className="pt-2">
+            <img 
+              src={logoMPC} 
+              alt="MPC Brasil" 
+              className="h-8 w-auto object-contain opacity-40 grayscale"
+            />
+          </div>
         </div>
       </div>
     </div>
