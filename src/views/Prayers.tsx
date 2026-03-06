@@ -10,7 +10,7 @@ interface PrayersProps {
 
 const Prayers: React.FC<PrayersProps> = ({ 
   prayers = [], 
-  toggleFavorite = () => {}, // Proteção: se não vier, vira uma função vazia e não quebra
+  toggleFavorite = () => {}, 
   togglePrayed = () => {}, 
   updateNote = () => {} 
 }) => {
@@ -24,6 +24,8 @@ const Prayers: React.FC<PrayersProps> = ({
     const list = Array.isArray(prayers) ? prayers : [];
     return list.filter(p => {
       if (!p) return false;
+      
+      // Filtro de Abas: Motivos mostra isPrayed false, Intercedidos mostra true
       const matchesTab = activeTab === 'motivos' ? !p.isPrayed : p.isPrayed;
       if (!matchesTab) return false;
 
@@ -41,7 +43,7 @@ const Prayers: React.FC<PrayersProps> = ({
       <div className="pt-6 space-y-5">
         <h2 className="serif-font text-3xl font-bold text-[#2D1B4D]">Pedidos de Oração</h2>
 
-        {/* ABAS */}
+        {/* ABAS - Layout Imagem 8 */}
         <div className="flex bg-gray-100 p-1.5 rounded-2xl border border-gray-200 shadow-inner">
           <button 
             onClick={() => setActiveTab('motivos')}
@@ -80,22 +82,48 @@ const Prayers: React.FC<PrayersProps> = ({
       </div>
 
       <div className="space-y-6">
-{filteredPrayers.map(p => (
-  <div key={`${p.id}-${p.isPrayed}`} className="bg-white rounded-[2.5rem] p-7 border border-gray-100 shadow-sm animate-slideUp">
-    {/* Conteúdo do Card */}
-    <button 
-      onClick={() => togglePrayed(p.id)}
-      className={`w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-        p.isPrayed 
-          ? 'bg-green-500 text-white shadow-lg' // VERDE
-          : 'bg-[#FF5722] text-white shadow-lg' // LARANJA
-      }`}
-    >
-      <i className={`fa-solid ${p.isPrayed ? 'fa-check-circle' : 'fa-hand-holding-heart'}`}></i>
-      {p.isPrayed ? 'INTERCEDIDO' : 'INTERCEDER'}
-    </button>
-  </div>
-))}
+        {filteredPrayers.length > 0 ? (
+          filteredPrayers.map(p => (
+            <div key={`${p.id}-${p.isPrayed}`} className="bg-white rounded-[2.5rem] p-7 border border-gray-100 shadow-sm animate-slideUp">
+              
+              {/* Cabeçalho do Card */}
+              <div className="flex justify-between items-start mb-4">
+                <span className="text-[9px] font-black text-[#FF5722] uppercase bg-[#FFF7ED] px-4 py-1.5 rounded-full">
+                  {p.category}
+                </span>
+                <button onClick={() => toggleFavorite(p.id)}>
+                  <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star text-xl ${p.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
+                </button>
+              </div>
+
+              {/* Conteúdo do Pedido */}
+              <h3 className="font-bold text-[#2D1B4D] text-xl mb-3">{p.title}</h3>
+              <div className="bg-[#FFF5F2] p-5 rounded-3xl mb-5 text-base italic border-l-4 border-[#FF5722]">
+                "{p.description}"
+              </div>
+
+              {/* Botão de Ação */}
+              <button 
+                onClick={() => togglePrayed(p.id)}
+                className={`w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+                  p.isPrayed 
+                    ? 'bg-green-500 text-white shadow-lg' 
+                    : 'bg-[#FF5722] text-white shadow-lg'
+                }`}
+              >
+                <i className={`fa-solid ${p.isPrayed ? 'fa-check-circle' : 'fa-hand-holding-heart'}`}></i>
+                {p.isPrayed ? 'INTERCEDIDO' : 'INTERCEDER'}
+              </button>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-10 text-gray-400 italic">
+            Nenhum pedido encontrado.
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Prayers;
