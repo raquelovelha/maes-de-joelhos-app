@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PrayerRequest } from '../types';
 
 interface PrayersProps {
@@ -9,51 +9,41 @@ interface PrayersProps {
   nomesFilhos: string[];
 }
 
-const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed, updateNote }) => {
-  // Estados de interface
+const Prayers: React.FC<PrayersProps> = ({ prayers = [], toggleFavorite, togglePrayed, updateNote }) => {
   const [activeTab, setActiveTab] = useState<'atuais' | 'realizadas' | 'favoritos'>('atuais');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('TODOS');
 
-  // Categorias fixas conforme solicitado
   const categorias = ['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'];
 
-  // LÓGICA DE FILTRAGEM RECONSTRUÍDA
+  // FILTRO CORRIGIDO: Agora com tratamento de erros para strings nulas
   const filteredPrayers = useMemo(() => {
-    // Primeiro, filtramos por Aba (Estado de oração e favoritos)
-    let list = prayers.filter(p => {
-      if (activeTab === 'atuais') return !p.isPrayed; // Só o que NÃO foi orado
-      if (activeTab === 'realizadas') return p.isPrayed; // Só o que JÁ foi orado
-      if (activeTab === 'favoritos') return p.isFavorite; // Independente de ser orado ou não
-      return true;
-    });
+    return prayers.filter(p => {
+      // 1. Filtro por ABA (Fundamental)
+      const matchesTab = 
+        activeTab === 'atuais' ? !p.isPrayed :
+        activeTab === 'realizadas' ? p.isPrayed :
+        p.isFavorite; // aba favoritos
 
-    // Segundo, aplicamos o filtro de Categoria
-    if (selectedCategory !== 'TODOS') {
-      list = list.filter(p => 
-        p.categoria?.toUpperCase().trim() === selectedCategory.toUpperCase().trim()
-      );
-    }
+      if (!matchesTab) return false;
 
-    // Terceiro, aplicamos a busca por texto (Case Insensitive)
-    if (searchTerm.trim() !== '') {
+      // 2. Filtro por CATEGORIA (Comparação segura)
+      const pCat = (p.categoria || "").toUpperCase().trim();
+      const sCat = selectedCategory.toUpperCase().trim();
+      const matchesCategory = sCat === 'TODOS' || pCat === sCat;
+
+      if (!matchesCategory) return false;
+
+      // 3. Filtro por BUSCA (Verifica texto, tema e versículo)
       const term = searchTerm.toLowerCase().trim();
-      list = list.filter(p => 
-        (p.texto?.toLowerCase().includes(term)) || 
-        (p.categoria?.toLowerCase().includes(term)) ||
-        (p.versiculo?.toLowerCase().includes(term))
-      );
-    }
+      if (term === '') return true;
 
-    return list;
+      const pTexto = (p.texto || "").toLowerCase();
+      const pVersiculo = (p.versiculo || "").toLowerCase();
+      
+      return pTexto.includes(term) || pCat.toLowerCase().includes(term) || pVersiculo.includes(term);
+    });
   }, [prayers, activeTab, searchTerm, selectedCategory]);
-
-  // Função para lidar com o clique e dar feedback visual imediato
-  const handleTogglePrayed = (id: number) => {
-    togglePrayed(id);
-    // Se estivermos na aba "atuais", o card deve sumir após o clique
-    // pois ele passará a ser uma "oração realizada"
-  };
 
   return (
     <div className="pb-44 px-4 space-y-6 animate-fadeIn bg-[#FFF5F1] min-h-screen">
@@ -63,20 +53,25 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         <p className="text-[10px] font-black text-[#FF4D8C] uppercase tracking-[0.2em]">Mães de joelhos, filhos de pé</p>
       </div>
 
-      {/* ABAS COM IDENTIFICAÇÃO CLARA */}
-      <div className="flex bg-white/60 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
-        <button onClick={() => setActiveTab('atuais')} className={`flex-1 py-3 rounded-xl text-[9px] font-bold tracking-widest uppercase transition-all ${activeTab === 'atuais' ? 'bg-white text-[#FF4D8C] shadow-md' : 'text-gray-400'}`}>
-          Motivos
-        </button>
-        <button onClick={() => setActiveTab('realizadas')} className={`flex-1 py-3 rounded-xl text-[9px] font-bold tracking-widest uppercase transition-all ${activeTab === 'realizadas' ? 'bg-white text-[#FF4D8C] shadow-md' : 'text-gray-400'}`}>
-          Orados
-        </button>
-        <button onClick={() => setActiveTab('favoritos')} className={`flex-1 py-3 rounded-xl text-[9px] font-bold tracking-widest uppercase transition-all ${activeTab === 'favoritos' ? 'bg-white text-[#FF4D8C] shadow-md' : 'text-gray-400'}`}>
-          Favoritos
-        </button>
+      {/* ABAS: Trocando estado visual */}
+      <div className="flex bg-white/60 p-1 rounded-2xl border border-gray-100 shadow-inner">
+        {(['atuais', 'realizadas', 'favoritos'] as const).map((tab) => (
+          <button 
+            key={tab}
+            onClick={() => {
+              setActiveTab(tab);
+              setSearchTerm(''); // Limpa busca ao trocar aba para evitar confusão
+            }}
+            className={`flex-1 py-3 rounded-xl text-[9px] font-black tracking-widest uppercase transition-all ${
+              activeTab === tab ? 'bg-white text-[#FF4D8C] shadow-md' : 'text-gray-400'
+            }`}
+          >
+            {tab === 'atuais' ? 'Motivos' : tab === 'realizadas' ? 'Orados' : 'Favoritos'}
+          </button>
+        ))}
       </div>
 
-      {/* INPUT DE BUSCA CORRIGIDO */}
+      {/* BUSCA: Input controlado */}
       <div className="relative">
         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
         <input 
@@ -88,7 +83,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         />
       </div>
 
-      {/* CATEGORIAS COM WRAP */}
+      {/* CATEGORIAS: Flex Wrap para aparecerem todas */}
       <div className="flex flex-wrap gap-2">
         {categorias.map(cat => (
           <button
@@ -96,7 +91,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
             onClick={() => setSelectedCategory(cat)}
             className={`px-4 py-2 rounded-full text-[10px] font-black tracking-widest transition-all border ${
               selectedCategory === cat 
-              ? 'bg-[#FF5722] text-white border-[#FF5722] shadow-lg' 
+              ? 'bg-[#FF5722] text-white border-[#FF5722] shadow-lg scale-105' 
               : 'bg-white text-gray-400 border-gray-100'
             }`}
           >
@@ -105,18 +100,20 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         ))}
       </div>
 
-      {/* LISTAGEM DE CARDS */}
+      {/* LISTA DE CARDS */}
       <div className="space-y-6">
         {filteredPrayers.length > 0 ? (
           filteredPrayers.map((prayer) => (
-            <div key={`${prayer.id}-${prayer.isPrayed}`} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 relative">
-              
+            <div 
+              key={`${prayer.id}-${prayer.isPrayed}-${prayer.isFavorite}`} 
+              className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 relative animate-slideUp"
+            >
               <div className="flex justify-between items-center">
                 <span className="bg-[#FFF7ED] text-[#FF5722] text-[9px] font-black px-4 py-1.5 rounded-full uppercase">
                   TEMA: {prayer.categoria}
                 </span>
                 <div className="flex gap-4">
-                  <button onClick={() => toggleFavorite(prayer.id)}>
+                  <button onClick={() => toggleFavorite(prayer.id)} className="active:scale-125 transition-transform">
                     <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star text-lg ${prayer.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
                   </button>
                   <i className="fa-solid fa-share-nodes text-lg text-gray-200"></i>
@@ -131,17 +128,16 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
               </div>
 
               <textarea 
-                placeholder="Anote o que Deus falar ao seu coração..."
+                placeholder="Anote o que Deus falar..."
                 value={prayer.personalNotes || ''}
                 onChange={(e) => updateNote(prayer.id, e.target.value)}
                 className="w-full bg-transparent border-b border-gray-50 py-2 text-sm outline-none resize-none italic text-gray-400"
               />
 
-              {/* BOTÃO COM LÓGICA DE ESTADO */}
               <button 
-                onClick={() => handleTogglePrayed(prayer.id)}
-                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
-                  prayer.isPrayed ? 'bg-[#4CAF50] text-white' : 'bg-[#FF5722] text-white'
+                onClick={() => togglePrayed(prayer.id)}
+                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 ${
+                  prayer.isPrayed ? 'bg-[#4CAF50] text-white shadow-inner' : 'bg-[#FF5722] text-white shadow-lg'
                 }`}
               >
                 <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
@@ -150,8 +146,12 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
             </div>
           ))
         ) : (
-          <div className="text-center py-20 text-gray-400 italic text-sm">
-            Nenhum pedido encontrado.
+          <div className="text-center py-24 flex flex-col items-center gap-4 opacity-50">
+            <i className="fa-solid fa-magnifying-glass text-4xl text-gray-200"></i>
+            <p className="text-gray-400 text-sm italic">Nenhum pedido encontrado nesta seleção.</p>
+            {(searchTerm || selectedCategory !== 'TODOS') && (
+              <button onClick={() => {setSearchTerm(''); setSelectedCategory('TODOS');}} className="text-[#FF4D8C] text-[10px] font-black underline">LIMPAR FILTROS</button>
+            )}
           </div>
         )}
       </div>

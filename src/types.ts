@@ -1,16 +1,25 @@
 
 export interface PrayerRequest {
   id: number;
-  title: string;
-  description: string;
-  verse: string;
-  category: string;
+
+  // O backend (Firebase) usa campos em português. Mantemos as propriedades mais usadas
+  // para evitar inconsistências com a UI atual.
+  texto: string;
+  categoria: string;
+  versiculo: string;
+
   isFavorite: boolean;
   isPrayed: boolean;
   personalNotes?: string;
+
+  // Campos opcionais para compatibilidade com possíveis usos futuros
+  title?: string;
+  description?: string;
+  verse?: string;
+  category?: string;
 }
 
-export interface ChildOfPrayer {
+export interface Child {
   id: string;
   name: string;
   photo?: string;
@@ -21,19 +30,16 @@ export interface ChildOfPrayer {
   notes: string;
   startDate: string;
   prayerMinutes: number;
-  individualRequests: ChildPrayerRequest[];
-  status?: 'active' | 'pending_review'; // Novo campo para controle de fluxo
+  requests: ChildPrayerRequest[];
+  userId?: string;
+  status?: 'active' | 'pending_review';
 }
 
 export interface ChildPrayerRequest {
   id: string;
-  request: string;
-  verse?: string;
-  status: 'em_oracao' | 'respondido';
-  createdAt: string; // ISO String
-  resolvedAt?: string; // ISO String quando marcado como respondido
-  lastPrayedAt?: string; // ISO String da última vez que foi especificamente intercedido
-  notes?: string;
+  title: string;
+  completed: boolean;
+  createdAt: string;
 }
 
 export interface UserStats {
@@ -44,12 +50,19 @@ export interface UserStats {
 }
 
 export interface UserProfile {
-  name: string;
+  // Os dados do Firestore usam campos em português (nome, pedidosConcluidosHoje, etc.)
+  nome: string;
   photo?: string;
-  birthDate: string;
-  church: string;
-  participationTime: string;
-  groupName: string;
+  birthDate?: string;
+  church?: string;
+  participationTime?: string;
+  groupName?: string;
+
+  dataUltimaOracao?: string;
+  pedidosConcluidosHoje?: number;
+  minutosHoje?: number;
+  pedidosTotalHistorico?: number;
+  minutosTotalHistorico?: number;
 }
 
 export interface CommunityRequest {
