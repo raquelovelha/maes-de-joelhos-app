@@ -25,8 +25,8 @@ export const usePrayers = () => {
 
         const combinedData = snapSugestoes.docs.map(docSnap => {
           const data = docSnap.data();
-          // GARANTINDO QUE O ID SEJA UM NÚMERO PARA O FILTRO FUNCIONAR
-          const diaId = Number(data.dia); 
+          // Importante: Garantir que o ID seja consistente com o tipo recebido no toggle
+          const diaId = data.dia; 
           const progress = userProgress[diaId] || {};
 
           return {
@@ -49,45 +49,56 @@ export const usePrayers = () => {
     loadData();
   }, [userId]);
 
-  // 2. FUNÇÃO AUXILIAR PARA SALVAR (Fora do loop de render)
+  // 2. SALVAMENTO OTIMISTA (Sincroniza UI primeiro, depois Banco)
   const syncWithFirebase = async (updatedList: PrayerRequest[]) => {
     if (!userId) return;
-    const userDocRef = doc(db, "user_progress", userId);
-    const progressMap = updatedList.reduce((acc: any, p) => {
-      acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
-      return acc;
-    }, {});
-    await setDoc(userDocRef, { prayers: progressMap }, { merge: true });
+    try {
+      const userDocRef = doc(db, "user_progress", userId);
+      const progressMap = updatedList.reduce((acc: any, p) => {
+        acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
+        return acc;
+      }, {});
+      await setDoc(userDocRef, { prayers: progressMap }, { merge: true });
+    } catch (e) { console.error("Erro ao salvar progresso:", e); }
   };
 
-  // 3. CONFIRMAR ORAÇÃO (AJUSTADO)
-  const togglePrayed = useCallback(async (id: number) => {
+  // 3. ALTERNAR ESTADO DE ORAÇÃO (Fix para o botão e troca de abas)
+  const togglePrayed = useCallback(async (id: any) => {
     if (!userId) return;
-    
-    // Atualização Otimista (Muda na tela na hora)
+
+    let newState = false;
+
     setPrayers(prev => {
-      const newList = prev.map(p => p.id === id ? { ...p, isPrayed: !p.isPrayed } : p);
-      syncWithFirebase(newList); // Salva em background
+      const newList = prev.map(p => {
+        if (p.id === id) {
+          newState = !p.isPrayed; // Define se estamos marcando ou desmarcando
+          return { ...p, isPrayed: newState };
+        }
+        return p;
+      });
+      syncWithFirebase(newList); // Salva o estado de intercedido/motivo
       return newList;
     });
 
-    // Atualiza contadores no perfil do usuário
-    try {
-      const hoje = new Date().toLocaleDateString('pt-BR');
-      const userRef = doc(db, "usuarios", userId);
-      const userSnap = await getDoc(userRef);
-      const isNovoDia = userSnap.data()?.dataUltimaOracao !== hoje;
+    // Só atualizamos os contadores globais (Stats) se ela estiver MARCANDO como orado
+    if (newState) {
+      try {
+        const hoje = new Date().toLocaleDateString('pt-BR');
+        const userRef = doc(db, "usuarios", userId);
+        const userSnap = await getDoc(userRef);
+        const isNovoDia = userSnap.data()?.dataUltimaOracao !== hoje;
 
-      await updateDoc(userRef, { 
-        pedidosTotalHistorico: increment(1),
-        dataUltimaOracao: hoje,
-        ...(isNovoDia ? { pedidosConcluidosHoje: 1 } : { pedidosConcluidosHoje: increment(1) })
-      });
-    } catch (e) { console.error("Erro nos stats:", e); }
+        await updateDoc(userRef, { 
+          pedidosTotalHistorico: increment(1),
+          dataUltimaOracao: hoje,
+          pedidosConcluidosHoje: isNovoDia ? 1 : increment(1)
+        });
+      } catch (e) { console.error("Erro ao atualizar stats:", e); }
+    }
   }, [userId]);
 
-  // 4. FAVORITOS
-  const toggleFavorite = useCallback((id: number) => {
+  // 4. FAVORITOS E NOTAS
+  const toggleFavorite = useCallback((id: any) => {
     setPrayers(prev => {
       const newList = prev.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p);
       syncWithFirebase(newList);
@@ -95,8 +106,7 @@ export const usePrayers = () => {
     });
   }, [userId]);
 
-  // 5. NOTAS
-  const updateNote = useCallback((id: number, note: string) => {
+  const updateNote = useCallback((id: any, note: string) => {
     setPrayers(prev => {
       const newList = prev.map(p => p.id === id ? { ...p, personalNotes: note } : p);
       syncWithFirebase(newList);
@@ -104,5 +114,22 @@ export const usePrayers = () => {
     });
   }, [userId]);
 
-  return { prayers, loading, togglePrayed, toggleFavorite, updateNote };
+  // 5. SALVAR TEMPO
+  const saveTime = useCallback(async (minutes: number) => {
+    if (!userId || minutes <= 0) return;
+    const hoje = new Date().toLocaleDateString('pt-BR');
+    try {
+      const userRef = doc(db, "usuarios", userId);
+      const userSnap = await getDoc(userRef);
+      const isNovoDia = userSnap.data()?.dataUltimaOracao !== hoje;
+
+      await updateDoc(userRef, { 
+        minutosHoje: isNovoDia ? minutes : increment(minutes),
+        minutosTotalHistorico: increment(minutes),
+        dataUltimaOracao: hoje
+      });
+    } catch (e) { console.error("Erro ao salvar tempo:", e); }
+  }, [userId]);
+
+  return { prayers, loading, togglePrayed, toggleFavorite, updateNote, saveTime };
 };

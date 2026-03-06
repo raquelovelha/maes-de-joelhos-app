@@ -10,47 +10,34 @@ interface PrayersProps {
 }
 
 const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed, updateNote }) => {
-  // Mudança de nome: 'orados' para 'intercedidos'
   const [activeTab, setActiveTab] = useState<'atuais' | 'intercedidos'>('atuais');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('TODOS');
 
-  const categorias = ['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'];
-
-  // LÓGICA DE FILTRAGEM CORRIGIDA
+  // FILTRAGEM ULTRA-ESTÁVEL
   const filteredPrayers = useMemo(() => {
     return prayers.filter(p => {
-      // 1. SEPARAÇÃO RIGOROSA DE ABAS (Resolve o problema de aparecer no lugar errado)
-      const isActuallyPrayed = p.isPrayed === true;
-      const matchesTab = activeTab === 'atuais' ? !isActuallyPrayed : isActuallyPrayed;
+      // 1. ABA: Se for 'atuais', isPrayed deve ser falso. Se for 'intercedidos', deve ser verdadeiro.
+      const isDone = p.isPrayed === true;
+      const matchesTab = activeTab === 'atuais' ? !isDone : isDone;
       if (!matchesTab) return false;
 
-      // 2. FILTRO DE CATEGORIA (Comparação normalizada)
+      // 2. CATEGORIA: De-seleção funciona voltando para TODOS
       if (selectedCategory !== 'TODOS') {
         const pCat = (p.categoria || "").toUpperCase().trim();
         const sCat = selectedCategory.toUpperCase().trim();
         if (pCat !== sCat) return false;
       }
 
-      // 3. FILTRO DE BUSCA
+      // 3. BUSCA
       if (searchTerm.trim() !== "") {
         const term = searchTerm.toLowerCase();
-        const textMatch = (p.texto || "").toLowerCase().includes(term);
-        if (!textMatch) return false;
+        if (!(p.texto || "").toLowerCase().includes(term)) return false;
       }
 
       return true;
     });
   }, [prayers, activeTab, searchTerm, selectedCategory]);
-
-  // Função para selecionar/deselecionar categoria
-  const handleCategoryClick = (cat: string) => {
-    if (selectedCategory === cat) {
-      setSelectedCategory('TODOS'); // De-seleção
-    } else {
-      setSelectedCategory(cat); // Seleção
-    }
-  };
 
   return (
     <div className="pb-44 px-4 space-y-6 bg-[#FFF5F1] min-h-screen">
@@ -60,7 +47,7 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         <p className="text-[10px] font-black text-[#FF4D8C] uppercase tracking-[0.2em]">Mães de joelhos, filhos de pé</p>
       </div>
 
-      {/* SELETOR DE ABAS - Nomes Atualizados */}
+      {/* ABAS */}
       <div className="flex bg-white/60 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
         <button 
           onClick={() => setActiveTab('atuais')}
@@ -80,25 +67,14 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         </button>
       </div>
 
-      {/* BUSCA */}
-      <input 
-        type="text"
-        placeholder="Busque por tema ou palavra..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full bg-white border border-gray-100 rounded-2xl py-4 px-6 shadow-sm outline-none text-sm"
-      />
-
-      {/* CATEGORIAS - Com lógica de de-seleção */}
+      {/* CATEGORIAS (Lógica de Selecionar/Desmarcar) */}
       <div className="flex flex-wrap gap-2">
-        {categorias.map(cat => (
+        {['TODOS', 'SALVAÇÃO', 'PROTEÇÃO', 'CRESCIMENTO', 'SAÚDE', 'ESTUDOS', 'AMIGOS'].map(cat => (
           <button
             key={cat}
-            onClick={() => handleCategoryClick(cat)}
+            onClick={() => setSelectedCategory(prev => prev === cat ? 'TODOS' : cat)}
             className={`px-4 py-2 rounded-full text-[10px] font-black transition-all border ${
-              selectedCategory === cat 
-              ? 'bg-[#FF5722] text-white border-[#FF5722] shadow-md' 
-              : 'bg-white text-gray-400 border-gray-100'
+              selectedCategory === cat ? 'bg-[#FF5722] text-white border-[#FF5722]' : 'bg-white text-gray-400 border-gray-100'
             }`}
           >
             {cat}
@@ -106,43 +82,41 @@ const Prayers: React.FC<PrayersProps> = ({ prayers, toggleFavorite, togglePrayed
         ))}
       </div>
 
-      {/* LISTAGEM */}
+      {/* LISTAGEM DE CARDS */}
       <div className="space-y-6">
         {filteredPrayers.length > 0 ? (
           filteredPrayers.map((prayer) => (
             <div 
-              key={`card-${prayer.id}-${prayer.isPrayed}`} 
+              key={`prayer-card-${prayer.id}-${prayer.texto.substring(0,10)}`} 
               className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50 space-y-5 animate-slideUp"
             >
               <div className="flex justify-between items-center">
                 <span className="bg-[#FFF7ED] text-[#FF5722] text-[9px] font-black px-4 py-1.5 rounded-full uppercase">
                   {prayer.categoria}
                 </span>
-                <div className="flex gap-3">
-                   <button onClick={() => toggleFavorite(prayer.id)}>
-                    <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star text-lg ${prayer.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
-                  </button>
-                </div>
+                <button onClick={() => toggleFavorite(prayer.id)}>
+                  <i className={`fa-${prayer.isFavorite ? 'solid' : 'regular'} fa-star text-lg ${prayer.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
+                </button>
               </div>
 
               <p className="text-[#2D1B4D] text-lg font-medium leading-relaxed">{prayer.texto}</p>
 
-              {/* BOTÃO DINÂMICO */}
+              {/* BOTÃO QUE ALTERNA (Muda de cor e texto na hora) */}
               <button 
                 onClick={() => togglePrayed(prayer.id)}
-                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 ${
                   prayer.isPrayed 
                   ? 'bg-green-500 text-white' 
                   : 'bg-[#FF5722] text-white shadow-lg'
                 }`}
               >
                 <i className={`fa-solid ${prayer.isPrayed ? 'fa-check-circle' : 'fa-hands-praying'}`}></i>
-                {prayer.isPrayed ? 'PEDIDO INTERCEDIDO' : 'CONFIRMAR ORAÇÃO'}
+                {prayer.isPrayed ? 'REMOVER DOS INTERCEDIDOS' : 'CONFIRMAR ORAÇÃO'}
               </button>
             </div>
           ))
         ) : (
-          <div className="text-center py-20 text-gray-300 italic text-sm">Nenhum pedido encontrado nesta categoria.</div>
+          <div className="text-center py-20 text-gray-300 italic text-sm">Nenhum pedido aqui.</div>
         )}
       </div>
     </div>
