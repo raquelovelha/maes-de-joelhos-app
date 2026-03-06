@@ -80,39 +80,22 @@ const Prayers: React.FC<PrayersProps> = ({
       </div>
 
       <div className="space-y-6">
-        {filteredPrayers.map(p => (
-          <div key={`${p.id}-${p.isPrayed}`} className="bg-white rounded-[2.5rem] p-7 border border-gray-100 shadow-sm animate-slideUp">
-            <div className="flex justify-between items-start mb-4">
-              <span className="text-[9px] font-black text-[#FF5722] uppercase bg-[#FFF7ED] px-4 py-1.5 rounded-full">
-                {p.category}
-              </span>
-              <button onClick={() => toggleFavorite(p.id)}>
-                <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star text-xl ${p.isFavorite ? 'text-[#FF4D8C]' : 'text-gray-200'}`}></i>
-              </button>
-            </div>
-
-            <h3 className="font-bold text-[#2D1B4D] text-xl mb-3">{p.title}</h3>
-            <div className="bg-[#FFF5F2] p-5 rounded-3xl mb-5 text-base italic border-l-4 border-[#FF5722]">
-              "{p.description}"
-            </div>
-
-            <button 
-              onClick={() => togglePrayed(p.id)}
-              className={`w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
-                p.isPrayed ? 'bg-green-500 text-white shadow-lg shadow-green-100' : 'bg-[#FF5722] text-white shadow-lg shadow-orange-100'
-              }`}
-            >
-              <i className={`fa-solid ${p.isPrayed ? 'fa-check-circle' : 'fa-hand-holding-heart'}`}></i>
-              {p.isPrayed ? 'INTERCEDIDO' : 'INTERCEDER'}
-            </button>
-          </div>
-        ))}
-        {filteredPrayers.length === 0 && (
-          <p className="text-center text-gray-400 py-10 italic">Nenhum pedido aqui.</p>
-        )}
-      </div>
-    </div>
-  );
+{filteredPrayers.map(p => (
+  <div key={`${p.id}-${p.isPrayed}`} className="bg-white rounded-[2.5rem] p-7 border border-gray-100 shadow-sm animate-slideUp">
+    {/* Conteúdo do Card */}
+    <button 
+      onClick={() => togglePrayed(p.id)}
+      className={`w-full py-5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all ${
+        p.isPrayed 
+          ? 'bg-green-500 text-white shadow-lg' // VERDE
+          : 'bg-[#FF5722] text-white shadow-lg' // LARANJA
+      }`}
+    >
+      <i className={`fa-solid ${p.isPrayed ? 'fa-check-circle' : 'fa-hand-holding-heart'}`}></i>
+      {p.isPrayed ? 'INTERCEDIDO' : 'INTERCEDER'}
+    </button>
+  </div>
+))}
 };
 
 export default Prayers;
