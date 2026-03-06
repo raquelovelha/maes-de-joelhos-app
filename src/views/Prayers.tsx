@@ -4,111 +4,107 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
 
-  // Categorias baseadas no seu banco de dados
-  const categories = ['Todos', 'SALVAÇÃO', 'PROTEÇÃO', 'SAÚDE', 'ESTUDOS', 'AMIGOS', 'FAMÍLIA'];
+  // Definição das categorias com ícones para os blocos
+  const categories = [
+    { id: 'Todos', label: 'Todos', icon: 'fa- layer-group', color: 'bg-gray-500' },
+    { id: 'SALVAÇÃO', label: 'Salvação', icon: 'fa-cross', color: 'bg-blue-500' },
+    { id: 'PROTEÇÃO', label: 'Proteção', icon: 'fa-shield-halved', color: 'bg-red-500' },
+    { id: 'SAÚDE', label: 'Saúde', icon: 'fa-heart-pulse', color: 'bg-green-500' },
+    { id: 'ESTUDOS', label: 'Estudos', icon: 'fa-graduation-cap', color: 'bg-orange-500' },
+    { id: 'FAMÍLIA', label: 'Família', icon: 'fa-house-chimney-heart', color: 'bg-purple-500' },
+  ];
 
-  // Lógica de Filtragem (Pesquisa + Categoria)
   const filteredPrayers = useMemo(() => {
     return prayers.filter((p: any) => {
-      const title = p.title || p.titulo || '';
-      const description = p.description || p.descricao || '';
-      const content = (title + description).toLowerCase();
-      
+      const content = ((p.title || p.titulo || '') + (p.description || p.descricao || '')).toLowerCase();
       const matchesSearch = content.includes(searchTerm.toLowerCase());
-      const matchesCat = selectedCategory === 'Todos' || 
-                         p.category?.toUpperCase() === selectedCategory || 
-                         p.categoria?.toUpperCase() === selectedCategory;
-      
+      const pCat = (p.category || p.categoria || '').toUpperCase();
+      const matchesCat = selectedCategory === 'Todos' || pCat === selectedCategory;
       return matchesSearch && matchesCat;
     });
   }, [prayers, searchTerm, selectedCategory]);
 
   return (
-    <div className="flex flex-col gap-6 pb-24 pt-2">
-      {/* 1. BARRA DE PESQUISA (NO TOPO) */}
+    <div className="flex flex-col gap-8 pb-24 pt-2">
+      
+      {/* 1. BUSCA */}
       <div className="relative group">
-        <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-brand-rose transition-colors"></i>
+        <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
         <input 
           type="text" 
-          placeholder="Buscar por palavra-chave ou nome..."
-          className="w-full bg-white border border-gray-100 rounded-2xl py-4 pl-12 pr-4 shadow-sm outline-none focus:ring-2 focus:ring-brand-rose/10 focus:border-brand-rose/20 transition-all text-sm"
+          placeholder="O que você busca hoje?"
+          className="w-full bg-white border border-gray-100 rounded-2xl py-4 pl-12 shadow-sm outline-none focus:ring-2 focus:ring-brand-rose/20 text-sm"
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        {searchTerm && (
-          <button 
-            onClick={() => setSearchTerm('')}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
-          >
-            <i className="fa-solid fa-xmark"></i>
-          </button>
-        )}
       </div>
 
-      {/* 2. CATEGORIAS (ABAIXO DA PESQUISA) */}
-      <div className="flex flex-col gap-3">
-        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Categorias</span>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      {/* 2. BLOCOS DE CATEGORIA (O GRID QUE VOCÊ PEDIU) */}
+      <div className="flex flex-col gap-4">
+        <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Categorias de Clamor</h3>
+        <div className="grid grid-cols-3 gap-3">
           {categories.map(cat => (
             <button 
-              key={cat} 
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2.5 rounded-xl text-[10px] font-black border transition-all whitespace-nowrap ${
-                selectedCategory === cat 
-                ? 'bg-brand-rose text-white border-brand-rose shadow-md shadow-brand-rose/20' 
-                : 'bg-white text-gray-400 border-gray-100 hover:border-brand-rose/30'
+              key={cat.id} 
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex flex-col items-center justify-center p-4 rounded-[2rem] border-2 transition-all gap-2 ${
+                selectedCategory === cat.id 
+                ? 'border-brand-rose bg-brand-rose/5 shadow-inner' 
+                : 'border-white bg-white shadow-sm hover:border-gray-100'
               }`}
             >
-              {cat}
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-xs ${
+                selectedCategory === cat.id ? 'bg-brand-rose' : 'bg-gray-100 text-gray-400'
+              }`}>
+                <i className={`fa-solid ${cat.icon}`}></i>
+              </div>
+              <span className={`text-[9px] font-black uppercase tracking-tighter ${
+                selectedCategory === cat.id ? 'text-brand-rose' : 'text-gray-400'
+              }`}>
+                {cat.label}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* 3. LISTA DE PEDIDOS COMPLETOS */}
-      <div className="grid gap-4 mt-2">
-        {filteredPrayers.length > 0 ? (
-          filteredPrayers.map((p: any) => (
-            <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 flex flex-col gap-4 hover:shadow-md transition-shadow">
-              
-              {/* Header do Card: Categoria e Favorito */}
+      {/* 3. LISTA DE PEDIDOS FILTRADOS */}
+      <div className="flex flex-col gap-4">
+        <div className="flex justify-between items-center px-1">
+            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                {selectedCategory === 'Todos' ? 'Todos os pedidos' : `Pedidos: ${selectedCategory}`}
+            </h3>
+            <span className="text-[10px] font-bold text-brand-rose">{filteredPrayers.length}</span>
+        </div>
+
+        <div className="grid gap-4">
+          {filteredPrayers.map((p: any) => (
+            <div key={p.id} className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-gray-50 flex flex-col gap-4">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-black text-brand-rose bg-brand-rose/5 self-start px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                  <span className="text-[9px] font-black text-brand-rose bg-brand-rose/5 px-2.5 py-1 rounded-lg uppercase self-start tracking-wider">
                     {p.category || p.categoria || 'Geral'}
                   </span>
-                  <h4 className="font-bold text-brand-dark text-lg leading-tight mt-1">
-                    {p.title || p.titulo}
-                  </h4>
+                  <h4 className="font-bold text-brand-dark text-lg leading-tight mt-1">Oração do Dia</h4>
                 </div>
-                <button 
-                  onClick={() => toggleFavorite(p.id)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-brand-rose/5 transition-colors group"
-                >
-                  <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star ${p.isFavorite ? 'text-brand-rose' : 'text-gray-200 group-hover:text-gray-300'}`}></i>
+                <button onClick={() => toggleFavorite(p.id)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-gray-50">
+                  <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star ${p.isFavorite ? 'text-brand-rose' : 'text-gray-200'}`}></i>
                 </button>
               </div>
 
-              {/* Texto do Pedido */}
-              <p className="text-gray-500 text-sm leading-relaxed italic border-l-2 border-brand-rose/10 pl-4 py-1">
+              <p className="text-gray-500 text-sm leading-relaxed italic border-l-2 border-brand-rose/10 pl-4">
                 "{p.description || p.descricao}"
               </p>
 
-              {/* Referência Bíblica (Se existir) */}
               {(p.biblicalReference || p.referencia) && (
-                <div className="flex items-center gap-2 text-brand-dark/70 font-bold text-[10px] bg-brand-lavender/40 self-start px-3 py-1.5 rounded-lg border border-brand-rose/5">
+                <div className="flex items-center gap-2 text-brand-dark/70 font-bold text-[10px] bg-brand-lavender/40 px-3 py-1.5 rounded-lg self-start">
                   <i className="fa-solid fa-book-bible text-brand-rose"></i>
                   <span>{p.biblicalReference || p.referencia}</span>
                 </div>
               )}
             </div>
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-300 gap-3">
-            <i className="fa-solid fa- magnifying-glass text-4xl opacity-20"></i>
-            <p className="text-sm italic font-medium text-gray-400">Nenhum alvo encontrado para esta busca.</p>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );
