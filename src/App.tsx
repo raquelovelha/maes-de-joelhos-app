@@ -13,7 +13,7 @@ import HomeView from './views/Home';
 import PrayersView from './views/Prayers';
 import FilhosView from './views/Filhos';
 import CommunityView from './views/Community';
-import Timer from './views/Timer'; // Nome ajustado para Timer.tsx
+import Timer from './views/Timer'; 
 import Profile from './views/Profile'; 
 import RegisterView from './views/Register'; 
 import { SplashScreen } from './components/UI';
@@ -50,12 +50,12 @@ const App: React.FC = () => {
       setUser(currentUser);
       
       if (currentUser) {
-        // Usamos onSnapshot para que, quando o Timer salvar no banco, 
-        // o App.tsx e o Profile atualizem sozinhos na hora!
+        // Escuta as mudanças no documento do usuário (minutos, pedidos, etc)
         const docRef = doc(db, "usuarios", currentUser.uid);
         const unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
+            // Atualiza o perfil e os stats em tempo real
             setProfile(prev => ({ ...prev, nome: data.nome, ...data }));
             setStats({
               streak: data.diasConsecutivos || 0,
@@ -82,18 +82,35 @@ const App: React.FC = () => {
   if (isLoading || (user && prayersLoading)) return <SplashScreen />;
   if (!user) return <RegisterView />;
 
+  // MAPEAMENTO DAS PÁGINAS (VIEWS)
   const views: Record<string, React.ReactNode> = {
-    home: <HomeView stats={stats} prayers={prayers} onNavigate={setActiveTab} nomesFilhos={children.map(c => c.name)} />,
-    prayers: <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} togglePrayed={togglePrayed} updateNote={updateNote} nomesFilhos={children.map(c => c.name)} />,
-    filhos: <FilhosView 
-      children={children} 
-      onAddChild={addChild} 
-      onDeleteChild={deleteChild} 
-      onAddRequest={addRequest} 
-      onToggleRequest={toggleRequestStatus} 
-      onRegisterPrayer={registerPrayerTime} 
-      onAccept={() => {}} 
-    />,
+    // HOME atualizada para receber o profile e a função de navegar
+    home: (
+      <HomeView 
+        profile={profile} 
+        onNavigate={setActiveTab} 
+      />
+    ),
+    prayers: (
+      <PrayersView 
+        prayers={prayers} 
+        toggleFavorite={toggleFavorite} 
+        togglePrayed={togglePrayed} 
+        updateNote={updateNote} 
+        nomesFilhos={children.map(c => c.name)} 
+      />
+    ),
+    filhos: (
+      <FilhosView 
+        children={children} 
+        onAddChild={addChild} 
+        onDeleteChild={deleteChild} 
+        onAddRequest={addRequest} 
+        onToggleRequest={toggleRequestStatus} 
+        onRegisterPrayer={registerPrayerTime} 
+        onAccept={() => {}} 
+      />
+    ),
     community: <CommunityView />,
     timer: <Timer stats={stats} setStats={setStats} onFinish={() => setActiveTab('home')} />,
     profile: <Profile profile={profile} stats={stats} setProfile={setProfile} />
@@ -106,7 +123,7 @@ const App: React.FC = () => {
         <Layout 
           activeTab={activeTab} 
           onTabChange={setActiveTab} 
-          userProfile={profile} // Passa o perfil para as iniciais no header aparecerem
+          userProfile={profile} 
         >
           {views[activeTab]}
         </Layout>
