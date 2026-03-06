@@ -1,26 +1,42 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface HomeProps {
   profile?: any;
 }
 
 const Home: React.FC<HomeProps> = ({ profile }) => {
-  // Pega a data de hoje no formato "DD/MM/AAAA"
+  const navigate = useNavigate();
+  
+  // Lógica de data para resetar os contadores da Home
   const hoje = new Date().toLocaleDateString('pt-BR');
   const dataUltimaOracao = profile?.dataUltimaOracao || "";
-
-  // Se a data salva for diferente de hoje, mostramos 0 (Reset visual de 24h)
   const isMesmoDia = hoje === dataUltimaOracao;
+  
   const pedidosHoje = isMesmoDia ? (profile?.pedidosConcluidosHoje || 0) : 0;
   const tempoHoje = isMesmoDia ? (profile?.minutosHoje || 0) : 0;
 
   return (
     <div className="space-y-6 animate-fadeIn pb-32 px-4">
-      {/* HEADER "VAMOS ORAR?" */}
-      <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-[3rem] p-8 border border-orange-200/50">
-        <p className="text-[11px] font-black text-orange-500 uppercase tracking-[0.2em] mb-4">Vamos orar?</p>
-        <h3 className="serif-font text-2xl font-bold text-brand-dark mb-2">"Efésios 6:11"</h3>
-        <p className="text-sm text-gray-600 leading-relaxed italic">"Vistam toda a armadura de Deus..."</p>
+      
+      {/* CARD INTERATIVO: VAMOS ORAR? */}
+      <div 
+        onClick={() => navigate('/oracoes')} // Certifique-se que a rota das orações seja esta
+        className="bg-gradient-to-br from-orange-50 to-orange-100/80 rounded-[3rem] p-8 border border-orange-200/50 shadow-sm active:scale-[0.98] transition-all cursor-pointer group"
+      >
+        <div className="flex justify-between items-start mb-4">
+          <p className="text-[11px] font-black text-orange-500 uppercase tracking-[0.2em]">Vamos orar?</p>
+          <i className="fa-solid fa-chevron-right text-orange-300 group-hover:translate-x-1 transition-transform"></i>
+        </div>
+        
+        <h3 className="serif-font text-2xl font-bold text-brand-dark mb-3">Efésios 6:11</h3>
+        <p className="text-sm text-gray-700 leading-relaxed mb-4">
+          "Revistam-se de toda a armadura de Deus, para poderem ficar firmes contra as ciladas do Diabo."
+        </p>
+        <div className="bg-white/50 rounded-2xl p-3 inline-flex items-center gap-2">
+          <i className="fa-solid fa-hands-praying text-orange-500 text-xs"></i>
+          <span className="text-[10px] font-bold text-orange-600 uppercase tracking-tighter">Toque para ver todos os motivos</span>
+        </div>
       </div>
 
       {/* STATUS DO DIA */}
@@ -42,14 +58,18 @@ const Home: React.FC<HomeProps> = ({ profile }) => {
         </div>
       </div>
 
-      {/* LOGO GERAÇÃO COMPROMISSO */}
-      <div className="bg-[#5c00b8] rounded-[3.5rem] p-2 overflow-hidden shadow-xl shadow-purple-200">
-        <div className="bg-white rounded-[3rem] py-10 flex items-center justify-center">
-          <img 
-            src="https://geracaocompromisso.com/wp-content/uploads/2022/02/Logo-GC-site-01.png" 
-            alt="Geração Compromisso" 
-            className="h-12 w-auto object-contain"
-          />
+      {/* SEÇÃO GERAÇÃO COMPROMISSO */}
+      <div className="space-y-3">
+        <p className="text-[10px] font-black text-brand-dark/40 uppercase tracking-[0.3em] text-center">Filhos de oração</p>
+        <div className="bg-[#5c00b8] rounded-[3.5rem] p-3 shadow-xl shadow-purple-200">
+          <div className="bg-white rounded-[3rem] py-12 flex items-center justify-center px-8">
+            <img 
+              src="https://geracaocompromisso.com/wp-content/uploads/2022/02/Logo-GC-site-01.png" 
+              alt="Geração Compromisso" 
+              className="w-full max-w-[180px] h-auto object-contain"
+              style={{ display: 'block', minHeight: '40px' }}
+            />
+          </div>
         </div>
       </div>
 
