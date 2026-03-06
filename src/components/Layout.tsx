@@ -6,7 +6,6 @@ interface LayoutProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   hasPending?: boolean;
-  // Adicionamos o perfil aqui para o Header saber o que mostrar
   userProfile?: {
     nome: string;
     fotoUrl?: string;
@@ -15,7 +14,6 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPending, userProfile }) => {
   
-  // Função para gerar as iniciais (Ex: "Raquel Guerreiro" -> "RG")
   const getInitials = (name: string) => {
     if (!name) return 'M';
     const names = name.trim().split(' ');
@@ -25,8 +23,8 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPe
   };
 
   return (
-    <div className="flex flex-col min-h-screen pb-24">
-      {/* Header - Com suporte a iniciais dinâmicas */}
+    <div className="flex flex-col min-h-screen pb-24 bg-[#FAFAFE]">
+      {/* Header */}
       <header className="bg-brand-lavender/80 px-6 py-3 sticky top-0 z-40 border-b border-brand-rose/20 shadow-sm backdrop-blur-xl">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-3">
@@ -47,7 +45,6 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPe
             </div>
           </div>
 
-          {/* Botão de Perfil: Agora com iniciais e gradiente */}
           <button 
             onClick={() => onTabChange('profile')} 
             className="w-10 h-10 rounded-2xl border-2 border-brand-rose/30 overflow-hidden active:scale-95 transition-transform bg-white shadow-sm flex items-center justify-center"
@@ -71,18 +68,28 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPe
       </main>
 
       {/* Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bottom-nav-blur border-t border-brand-lavender py-3 px-6 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-brand-lavender py-3 px-6 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <NavItem icon="fa-house" label="Home" active={activeTab === 'home'} onClick={() => onTabChange('home')} />
           <NavItem icon="fa-book-bible" label="Orações" active={activeTab === 'prayers'} onClick={() => onTabChange('prayers')} />
-          <div className="relative -mt-12">
+          
+          {/* BOTÃO CENTRAL: 15 MINUTOS DE CLAMOR */}
+          <div className="relative -mt-14 flex flex-col items-center gap-1.5">
             <button 
                 onClick={() => onTabChange('timer')}
-                className="w-16 h-16 gradient-brand rounded-full shadow-2xl flex items-center justify-center text-white border-4 border-white transform transition active:scale-90 hover:scale-105 group"
+                className={`w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-white border-4 border-white transform transition active:scale-90 hover:scale-105 group ${
+                  activeTab === 'timer' ? 'bg-[#5c00b8]' : 'bg-gradient-to-br from-[#FF5722] to-[#FF8A65]'
+                }`}
             >
-              <i className="fa-solid fa-clock text-2xl group-hover:rotate-12 transition-transform"></i>
+              <i className={`fa-solid ${activeTab === 'timer' ? 'fa-hands-praying' : 'fa-stopwatch'} text-2xl group-hover:rotate-12 transition-transform`}></i>
             </button>
+            
+            {/* Legenda de Destaque */}
+            <span className="text-[7px] font-black text-[#FF5722] uppercase tracking-[0.1em] bg-orange-50 px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap border border-orange-100">
+              15 min de Clamor
+            </span>
           </div>
+
           <NavItem 
             icon="fa-person-praying" 
             label="Filhos" 
