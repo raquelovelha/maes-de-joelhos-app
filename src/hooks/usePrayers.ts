@@ -45,32 +45,33 @@ export const usePrayers = () => {
 
   useEffect(() => { loadData(); }, [userId]);
 
-  const togglePrayed = useCallback(async (id: any) => {
+const togglePrayed = useCallback(async (id: any) => {
     if (!userId) return;
-    setPrayers(prev => {
-      const newList = prev.map(p => String(p.id) === String(id) ? { ...p, isPrayed: !p.isPrayed } : p);
-      
-      // Salva no Firebase
-      const progressMap = newList.reduce((acc: any, p) => {
-        acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
-        return acc;
-      }, {});
-      
-      setDoc(doc(db, "user_progress", userId), { prayers: progressMap }, { merge: true });
-      return newList;
-    });
-  }, [userId]);
 
-  const toggleFavorite = useCallback(async (id: any) => {
-    if (!userId) return;
-    setPrayers(prev => {
-      const newList = prev.map(p => String(p.id) === String(id) ? { ...p, isFavorite: !p.isFavorite } : p);
-      const progressMap = newList.reduce((acc: any, p) => {
-        acc[p.id] = { isPrayed: p.isPrayed, isFavorite: p.isFavorite, personalNotes: p.personalNotes };
+    // 1. Atualiza o estado local IMEDIATAMENTE para dar velocidade à interface
+    setPrayers(currentPrayers => {
+      const updatedList = currentPrayers.map(p => {
+        // Comparação flexível de ID (string ou número)
+        if (String(p.id) === String(id)) {
+          return { ...p, isPrayed: !p.isPrayed };
+        }
+        return p;
+      });
+
+      // 2. Salva o novo estado no Firebase em segundo plano
+      const progressMap = updatedList.reduce((acc: any, p) => {
+        acc[p.id] = { 
+          isPrayed: p.isPrayed, 
+          isFavorite: p.isFavorite, 
+          personalNotes: p.personalNotes || '' 
+        };
         return acc;
       }, {});
-      setDoc(doc(db, "user_progress", userId), { prayers: progressMap }, { merge: true });
-      return newList;
+
+      setDoc(doc(db, "user_progress", userId), { prayers: progressMap }, { merge: true })
+        .catch(err => console.error("Erro ao salvar:", err));
+
+      return [...updatedList]; // Retorna uma cópia nova para forçar o React a ver a mudança
     });
   }, [userId]);
 
