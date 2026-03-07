@@ -22,7 +22,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null); 
   
-  // ESTADO GLOBAL DO TIMER PARA NÃO RESETAR
+  // ESTADO GLOBAL DO TIMER (Para persistência entre abas)
   const [timerSeconds, setTimerSeconds] = useState(15 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -51,7 +51,7 @@ const App: React.FC = () => {
             setStats({
               streak: data.diasConsecutivos || 0,
               totalMinutes: data.minutosIntercedidos || 0,
-              totalDays: data.totalDias || 0,
+              totalDays: data.totalDays || 0,
               hasDailyTrophy: data.ultimoDiaOrado === new Date().toISOString().split('T')[0]
             });
           }
@@ -75,37 +75,66 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'home':
         return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      
       case 'prayers':
-        return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} />;
+        return (
+          <PrayersView 
+            prayers={prayers} 
+            toggleFavorite={toggleFavorite} 
+          />
+        );
+      
       case 'timer':
         return (
           <TimerView 
+            user={user} // Passando o usuário autenticado para o Diário funcionar
             prayers={prayers} 
             timeLeft={timerSeconds}
             setTimeLeft={setTimerSeconds}
             isTimerActive={isTimerRunning}
             setIsTimerActive={setIsTimerRunning}
-            onFinish={() => setActiveTab('home')} 
+            onFinish={() => {
+                setActiveTab('home');
+                setIsTimerRunning(false);
+                setTimerSeconds(15 * 60); // Reseta após a conclusão real
+            }} 
           />
         );
+      
       case 'filhos':
         return (
           <FilhosView 
-            children={children} onAddChild={addChild} onDeleteChild={deleteChild} 
-            onAddRequest={addRequest} onToggleRequest={toggleRequestStatus} 
-            onRegisterPrayer={registerPrayerTime} onAccept={() => {}} 
+            children={children} 
+            onAddChild={addChild} 
+            onDeleteChild={deleteChild} 
+            onAddRequest={addRequest} 
+            onToggleRequest={toggleRequestStatus} 
+            onRegisterPrayer={registerPrayerTime} 
+            onAccept={() => {}} 
           />
         );
-      case 'community': return <CommunityView />;
-      case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} />;
-      default: return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      
+      case 'community': 
+        return <CommunityView />;
+      
+      case 'profile': 
+        return <Profile profile={profile} stats={stats} setProfile={setProfile} />;
+      
+      default: 
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
 
   return (
     <div className="relative min-h-screen bg-[#FAFAFE]">
-      <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
-        {renderView()}
+      <Layout 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab} 
+        userProfile={profile}
+      >
+        <main className="animate-fadeIn">
+          {renderView()}
+        </main>
       </Layout>
     </div>
   );
