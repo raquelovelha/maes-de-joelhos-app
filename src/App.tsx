@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null); 
   
-  // ESTADO GLOBAL DO TIMER PARA PERSISTÊNCIA
   const [timerSeconds, setTimerSeconds] = useState(15 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -52,7 +51,7 @@ const App: React.FC = () => {
             setStats({
               streak: data.diasConsecutivos || 0,
               totalMinutes: data.minutosIntercedidos || 0,
-              totalDays: data.totalDays || 0,
+              totalDays: data.totalDias || 0,
               hasDailyTrophy: data.ultimoDiaOrado === new Date().toISOString().split('T')[0]
             });
           }
@@ -110,11 +109,12 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#FAFAFE]">
+    <div className="relative min-h-screen bg-[#FAFAFE] overflow-x-hidden">
       <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
-        <div className="max-w-md mx-auto px-4">
+        {/* Container com padding bottom para evitar cortes nas logos e botões */}
+        <main className="max-w-md mx-auto px-4 pb-32 pt-4">
           {renderView()}
-        </div>
+        </main>
       </Layout>
     </div>
   );
