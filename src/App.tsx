@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth'; 
-import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore'; 
+import { doc, onSnapshot } from 'firebase/firestore'; 
 import { db } from './firebase'; 
 
 import Layout from './components/Layout';
@@ -10,6 +10,7 @@ import FilhosView from './views/Filhos';
 import CommunityView from './views/Community';
 import TimerView from './views/Timer'; 
 import Profile from './views/Profile'; 
+import MemorialView from './views/Memorial'; 
 import RegisterView from './views/Register'; 
 import { SplashScreen } from './components/UI';
 
@@ -22,7 +23,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null); 
   
-  // ESTADO GLOBAL DO TIMER (Para persistência entre abas)
+  // ESTADO GLOBAL DO TIMER PARA PERSISTÊNCIA
   const [timerSeconds, setTimerSeconds] = useState(15 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -75,66 +76,45 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'home':
         return <HomeView profile={profile} onNavigate={setActiveTab} />;
-      
       case 'prayers':
-        return (
-          <PrayersView 
-            prayers={prayers} 
-            toggleFavorite={toggleFavorite} 
-          />
-        );
-      
+        return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} onNavigate={setActiveTab} />;
       case 'timer':
         return (
           <TimerView 
-            user={user} // Passando o usuário autenticado para o Diário funcionar
+            user={user}
             prayers={prayers} 
             timeLeft={timerSeconds}
             setTimeLeft={setTimerSeconds}
             isTimerActive={isTimerRunning}
             setIsTimerActive={setIsTimerRunning}
             onFinish={() => {
-                setActiveTab('home');
-                setIsTimerRunning(false);
-                setTimerSeconds(15 * 60); // Reseta após a conclusão real
+              setActiveTab('home');
+              setIsTimerRunning(false);
+              setTimerSeconds(15 * 60);
             }} 
           />
         );
-      
       case 'filhos':
         return (
           <FilhosView 
-            children={children} 
-            onAddChild={addChild} 
-            onDeleteChild={deleteChild} 
-            onAddRequest={addRequest} 
-            onToggleRequest={toggleRequestStatus} 
-            onRegisterPrayer={registerPrayerTime} 
-            onAccept={() => {}} 
+            children={children} onAddChild={addChild} onDeleteChild={deleteChild} 
+            onAddRequest={addRequest} onToggleRequest={toggleRequestStatus} 
+            onRegisterPrayer={registerPrayerTime} onAccept={() => {}} 
           />
         );
-      
-      case 'community': 
-        return <CommunityView />;
-      
-      case 'profile': 
-        return <Profile profile={profile} stats={stats} setProfile={setProfile} />;
-      
-      default: 
-        return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      case 'community': return <CommunityView />;
+      case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} onNavigate={setActiveTab} />;
+      case 'memorial': return <MemorialView user={user} onBack={() => setActiveTab('prayers')} />;
+      default: return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
 
   return (
     <div className="relative min-h-screen bg-[#FAFAFE]">
-      <Layout 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab} 
-        userProfile={profile}
-      >
-        <main className="animate-fadeIn">
+      <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
+        <div className="max-w-md mx-auto px-4">
           {renderView()}
-        </main>
+        </div>
       </Layout>
     </div>
   );

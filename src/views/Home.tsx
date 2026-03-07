@@ -1,133 +1,74 @@
 import React from 'react';
 
-interface HomeProps {
-  profile?: any;
-  onNavigate?: (tab: string) => void; 
-}
-
-const Home: React.FC<HomeProps> = ({ profile, onNavigate }) => {
-  
-  const hoje = new Date().toLocaleDateString('pt-BR');
-  const dataUltimaOracao = profile?.dataUltimaOracao || "";
-  const isMesmoDia = hoje === dataUltimaOracao;
-  
-  const pedidosHoje = isMesmoDia ? (profile?.pedidosConcluidosHoje || 0) : 0;
-  const tempoHoje = isMesmoDia ? (profile?.minutosHoje || 0) : 0;
-
-  // Logos Oficiais
-  const logoGC = "https://i.postimg.cc/MKLSGrq8/GC-horizontal-cores-gradiente-fundoclaro.png";
-  const logoMPC = "https://i.postimg.cc/ryDdx9qp/logo-Logo-P-B-Completa.png";
-
-  // Função para compartilhar o versículo no WhatsApp
-  const shareVerse = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Evita navegar para a aba de oração ao clicar no ícone de compartilhar
-    const verse = profile?.verseOfTheDay || "Revistam-se de toda a armadura de Deus. - Efésios 6:11";
-    const text = encodeURIComponent(`🙏 Minha palavra de hoje no App Mães de Joelhos: \n\n"${verse}"`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
+const Home: React.FC<any> = ({ profile, onNavigate }) => {
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Bom dia, Sentinela";
+    if (hour < 18) return "Boa tarde, Débora";
+    return "Boa noite, Mãe Intercessora";
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-32 px-4 pt-6">
-      
-      {/* HEADER: SAUDAÇÃO PERSONALIZADA */}
-      <div className="px-2 flex justify-between items-center mb-2">
-        <div>
-          <h1 className="serif-font text-3xl font-bold text-[#2D1B4D]">
-            Olá, {profile?.name?.split(' ')[0] || "Missionária"}!
-          </h1>
-          <p className="text-[#FF4D8C] text-[10px] font-black uppercase tracking-widest">Bom dia com o Senhor</p>
-        </div>
-        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center border border-gray-100">
-           <i className="fa-solid fa-crown text-amber-400"></i>
-        </div>
+    <div className="flex flex-col gap-8 pb-24 animate-fadeIn">
+      {/* 1. HEADER AFETIVO */}
+      <div className="mt-4">
+        <h1 className="serif-font text-3xl font-bold text-[#2D1B4D] leading-tight">
+          {getGreeting()}, <br/>
+          <span className="text-brand-rose">{profile.name}</span>
+        </h1>
+        <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-2">
+          "Mães de joelhos, filhos de pé"
+        </p>
       </div>
 
-      {/* CARD PREMIUM: VERSÍCULO DINÂMICO DO DIA */}
-      <div 
-        onClick={() => onNavigate && onNavigate('prayers')}
-        className="relative overflow-hidden bg-gradient-to-br from-[#FF5722] to-[#FF8A65] rounded-[2.5rem] p-8 shadow-xl shadow-orange-100 active:scale-[0.98] transition-all cursor-pointer"
-      >
-        {/* Marca d'água de aspas */}
-        <i className="fa-solid fa-quote-right absolute -right-4 -bottom-4 text-white/10 text-8xl"></i>
+      {/* 2. CARD DE CHAMADA PRINCIPAL (TIMER) */}
+      <div className="bg-gradient-to-br from-[#5c00b8] to-[#9d50bb] rounded-[3rem] p-8 shadow-2xl shadow-purple-200 relative overflow-hidden group">
+        <div className="absolute top-[-20px] right-[-20px] w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform"></div>
         
         <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="bg-white/20 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-              Palavra do Dia
-            </span>
-          </div>
-          
-          <p className="serif-font text-xl text-white leading-relaxed italic mb-5">
-            "{profile?.verseOfTheDay || "Revistam-se de toda a armadura de Deus, para poderem ficar firmes contra as ciladas do Diabo. - Efésios 6:11"}"
+          <h2 className="text-white text-2xl font-bold mb-2">15 Minutos de Clamor</h2>
+          <p className="text-purple-100 text-sm mb-6 leading-relaxed opacity-90">
+            Cinco alvos específicos esperam por sua intercessão agora. Vamos juntas?
           </p>
-          
-          <div className="flex items-center justify-between border-t border-white/20 pt-4">
-             <span className="text-[9px] font-black text-white/80 uppercase tracking-tighter flex items-center gap-2">
-                <i className="fa-solid fa-hand-holding-heart"></i>
-                Toque para interceder agora
-             </span>
-             <button 
-               onClick={shareVerse}
-               className="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors flex items-center justify-center"
-             >
-                <i className="fa-solid fa-share-nodes text-white text-xs"></i>
-             </button>
-          </div>
+          <button 
+            onClick={() => onNavigate('timer')}
+            className="bg-white text-[#5c00b8] px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg active:scale-95 transition-all"
+          >
+            Iniciar Altar Hoje
+          </button>
         </div>
       </div>
 
-      {/* STATUS RÁPIDO: DASHBOARD DO DIA */}
+      {/* 3. VERSÍCULO DO DIA */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-purple-50 shadow-sm text-center italic">
+        <i className="fa-solid fa-quote-left text-brand-rose/20 text-4xl mb-2 block"></i>
+        <p className="text-gray-600 text-lg serif-font font-medium leading-relaxed">
+          "Instrui a criança no caminho em que deve andar, e até quando envelhecer não se desviará dele."
+        </p>
+        <span className="block mt-4 text-[10px] font-black text-brand-rose uppercase tracking-[0.2em]">Provérbios 22:6</span>
+      </div>
+
+      {/* 4. ATALHOS RÁPIDOS (Grelha) */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-[2.5rem] p-6 flex flex-col items-center text-center border border-gray-100 shadow-sm">
-          <div className="w-10 h-10 bg-[#FFF7ED] rounded-2xl flex items-center justify-center mb-3">
-             <i className="fa-solid fa-fire text-orange-500"></i>
+        <button 
+          onClick={() => onNavigate('prayers')}
+          className="bg-brand-rose/5 border border-brand-rose/10 p-5 rounded-[2.5rem] flex flex-col items-center gap-3 transition-all active:scale-95"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-brand-rose shadow-sm">
+            <i className="fa-solid fa-book-open-reader"></i>
           </div>
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Pedidos Hoje</p>
-          <p className="text-2xl font-black text-[#2D1B4D]">{pedidosHoje}</p>
-        </div>
+          <span className="text-[10px] font-black text-[#2D1B4D] uppercase">Pastas de Oração</span>
+        </button>
 
-        <div className="bg-white rounded-[2.5rem] p-6 flex flex-col items-center text-center border border-gray-100 shadow-sm">
-          <div className="w-10 h-10 bg-[#FDF2F8] rounded-2xl flex items-center justify-center mb-3">
-             <i className="fa-solid fa-clock text-pink-500"></i>
+        <button 
+          onClick={() => onNavigate('filhos')}
+          className="bg-purple-50 border border-purple-100 p-5 rounded-[2.5rem] flex flex-col items-center gap-3 transition-all active:scale-95"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-[#5c00b8] shadow-sm">
+            <i className="fa-solid fa-children"></i>
           </div>
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Tempo Hoje</p>
-          <p className="text-2xl font-black text-[#2D1B4D]">{tempoHoje}m</p>
-        </div>
-      </div>
-
-      {/* SEÇÃO INSTITUCIONAL: GERAÇÃO COMPROMISSO */}
-      <div className="bg-[#5c00b8] rounded-[2.5rem] p-4 shadow-xl shadow-purple-100">
-        <p className="text-[10px] font-bold text-white/70 uppercase tracking-[0.2em] mb-3 ml-4 italic font-black">Filhos de oração...</p>
-        <div className="bg-white rounded-[2rem] py-8 flex items-center justify-center px-8 min-h-[100px]">
-          <img 
-            src={logoGC} 
-            alt="Geração Compromisso" 
-            className="w-full max-w-[180px] h-auto object-contain block mx-auto"
-          />
-        </div>
-      </div>
-
-      {/* FOOTER: MPC BRASIL */}
-      <div className="text-center space-y-5 pt-4 pb-6 px-6">
-        <div className="flex items-center justify-center gap-2">
-           <div className="h-[1px] w-8 bg-gray-200"></div>
-           <p className="text-[11px] font-black text-purple-800 uppercase italic tracking-[0.15em]">
-             Mães de joelhos, filhos de pé!
-           </p>
-           <div className="h-[1px] w-8 bg-gray-200"></div>
-        </div>
-        
-        <div className="space-y-4">
-          <p className="text-[9px] text-gray-400 font-bold uppercase leading-relaxed max-w-[280px] mx-auto">
-            Somos um departamento da MPC (Mocidade Para Cristo) e trabalhamos juntamente com todos os departamentos desta missão.
-          </p>
-          
-          <img 
-            src={logoMPC} 
-            alt="MPC Brasil" 
-            className="h-8 w-auto object-contain block mx-auto grayscale opacity-60"
-          />
-        </div>
+          <span className="text-[10px] font-black text-[#2D1B4D] uppercase">Meus Filhos</span>
+        </button>
       </div>
     </div>
   );
