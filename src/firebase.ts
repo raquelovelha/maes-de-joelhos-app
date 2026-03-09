@@ -1,19 +1,19 @@
-import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
+// O Vite exige o uso de import.meta.env e o prefixo VITE_
 const firebaseConfig = {
-  apiKey: "AIzaSyBmpyvlLrK3SQBQpUWVizbI09WKo--k5Ro",
-  authDomain: "maes-de-joelhos.firebaseapp.com",
-  projectId: "maes-de-joelhos",
-  storageBucket: "maes-de-joelhos.firebasestorage.app",
-  messagingSenderId: "905186440856",
-  appId: "1:905186440856:web:37c4a455e2223dfbaa82ed"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-// Inicializa o Firebase (O "Coração" do App)
 const app = initializeApp(firebaseConfig);
 
-// Exporta as ferramentas para o restante do projeto
+export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const auth = getAuth(app); // <--- ESSA LINHA É A MAIS IMPORTANTE!
+export default app;
