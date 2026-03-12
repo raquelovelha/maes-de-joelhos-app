@@ -1,17 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
-const Memorial: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack }) => {
-  const [entries, setEntries] = useState<any[]>([]);
+interface MemorialProps {
+  user: any;
+  onBack: () => void;
+}
+
+const MemorialView: React.FC<MemorialProps> = ({ user, onBack }) => {
+  const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
 
+    // Busca na coleção correta que definimos no Timer
     const q = query(
-      collection(db, `usuarios/${user.uid}/diario`),
-      orderBy('data', 'desc')
+      collection(db, "diario_clamor"),
+      where("userId", "==", user.uid),
+      orderBy("data", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -19,7 +26,10 @@ const Memorial: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack })
         id: doc.id,
         ...doc.data()
       }));
-      setEntries(docs);
+      setLogs(docs);
+      setLoading(false);
+    }, (error) => {
+      console.error("Erro ao buscar diário:", error);
       setLoading(false);
     });
 
@@ -27,46 +37,44 @@ const Memorial: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack })
   }, [user]);
 
   return (
-    <div className="flex flex-col gap-6 pb-24 animate-fadeIn">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-brand-rose">
-          <i className="fa-solid fa-arrow-left"></i>
+    <div className="flex flex-col gap-6 animate-fadeIn pb-20">
+      <header className="flex items-center justify-between">
+        <button onClick={onBack} className="text-brand-rose flex items-center gap-2">
+          <i className="fa-solid fa-chevron-left"></i>
+          <span className="text-xs font-black uppercase">Voltar</span>
         </button>
-        <h2 className="serif-font text-2xl font-bold text-[#2D1B4D]">Meu diário de oração</h2>
-      </div>
+        <h2 className="serif-font text-xl font-bold text-brand-dark">Meu Diário</h2>
+        <div className="w-8"></div>
+      </header>
 
       {loading ? (
-        <div className="py-20 text-center opacity-50 italic">Carregando suas memórias...</div>
-      ) : entries.length > 0 ? (
-        <div className="grid gap-4">
-          {entries.map((item) => (
-            <div key={item.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-purple-50 flex flex-col gap-3">
-              <div className="flex justify-between items-start">
-                <span className="text-[10px] font-black text-brand-rose uppercase tracking-widest bg-pink-50 px-3 py-1 rounded-full">
-                  {item.categoria || 'Geral'}
+        <div className="text-center py-20 text-gray-400">Carregando memórias...</div>
+      ) : logs.length === 0 ? (
+        <div className="bg-white rounded-[2rem] p-10 text-center border border-dashed border-brand-lavender">
+          <i className="fa-solid fa-pen-nib text-3xl text-brand-lavender mb-4"></i>
+          <p className="text-gray-500 text-sm">Você ainda não registrou nenhuma anotação hoje. Suas vitórias aparecerão aqui!</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {logs.map((log) => (
+            <div key={log.id} className="bg-white rounded-3xl p-6 shadow-sm border border-brand-lavender/30">
+              <div className="flex justify-between items-start mb-3">
+                <span className="bg-brand-rose/10 text-brand-rose text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                  {log.alvo}
                 </span>
-                <span className="text-[10px] text-gray-400 font-bold">
-                  {item.data?.toDate().toLocaleDateString('pt-BR')}
+                <span className="text-[10px] text-gray-400">
+                  {log.data?.toDate().toLocaleDateString('pt-BR')}
                 </span>
               </div>
-              
-              <h4 className="font-bold text-[#2D1B4D] text-sm">Alvo: {item.alvo}</h4>
-              
-              <p className="text-gray-500 text-sm italic leading-relaxed bg-gray-50 p-4 rounded-2xl">
-                "{item.texto}"
+              <p className="text-[#2D1B4D] text-sm leading-relaxed italic">
+                "{log.relato}"
               </p>
             </div>
           ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-          <i className="fa-solid fa-feather-pointed text-4xl mb-4 text-purple-300"></i>
-          <p className="text-sm font-medium">Seu diário ainda está vazio.<br/>As anotações feitas durante o clamor de 15 min aparecerão aqui!</p>
         </div>
       )}
     </div>
   );
 };
 
-export default Memorial;
+export default MemorialView;
