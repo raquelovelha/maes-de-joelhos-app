@@ -1,126 +1,175 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '../firebase';
+import React, { useState, useEffect } from 'react';
+import { db } from '../firebase'; // Importando a conexão que configuramos
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Prayer } from '../types';
 
-const Timer: React.FC<any> = ({ user, prayers = [], timeLeft, setTimeLeft, isTimerActive, setIsTimerActive, onFinish }) => {
-  const [note, setNote] = useState('');
+interface TimerProps {
+  user: any;
+  prayers: Prayer[];
+  timeLeft: number;
+  setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
+  isTimerActive: boolean;
+  setIsTimerActive: React.Dispatch<React.SetStateAction<boolean>>;
+  onFinish: () => void;
+}
+
+const TimerView: React.FC<TimerProps> = ({ 
+  user, prayers, timeLeft, setTimeLeft, isTimerActive, setIsTimerActive, onFinish 
+}) => {
+  const [currentPrayerIndex, setCurrentPrayerIndex] = useState(0);
+  const [prayerNote, setPrayerNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // Seleção dos 5 alvos do dia
-  const missaoDoDia = useMemo(() => {
-    if (!prayers || prayers.length === 0) return [];
-    const seed = new Date().getDate();
-    return [...prayers].sort(() => 0.5 - Math.random() * seed).slice(0, 5);
-  }, [prayers]);
-
-  // Lógica do Timer
-  useEffect(() => {
-    let interval: any;
-    if (isTimerActive && timeLeft > 0) {
-      interval = setInterval(() => setTimeLeft((prev: number) => prev - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerActive, timeLeft, setTimeLeft]);
-
-  const currentStep = Math.floor(((15 * 60) - timeLeft) / 180);
-  const alvoAtual = missaoDoDia[currentStep < 5 ? currentStep : 4];
-
+  // Formatação do tempo (00:00)
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Função para salvar anotação no Firebase
-  const salvarNoDiario = async () => {
-    if (!note.trim() || !user) return;
+  useEffect(() => {
+    let interval: any;
+    if (isTimerActive && timeLeft > 0) {
+      interval = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+    } else if (timeLeft === 0) {
+      setIsTimerActive(false);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerActive, timeLeft]);
+
+  const currentPrayer = prayers[currentPrayerIndex % prayers.length];
+
+  const handleNextPrayer = () => {
+    setPrayerNote("");
+    setShowSuccess(false);
+    setCurrentPrayerIndex(prev => prev + 1);
+  };
+
+  const handleLogVictory = async () => {
+    if (!prayerNote.trim() || !user) return;
+    
     setIsSaving(true);
     try {
-      await addDoc(collection(db, `usuarios/${user.uid}/diario`), {
-        texto: note,
-        alvo: alvoAtual?.title || alvoAtual?.titulo || 'Oração do Dia',
-        categoria: alvoAtual?.category || alvoAtual?.categoria || 'Geral',
-        data: serverTimestamp(),
+      // SALVANDO NO FIREBASE
+      await addDoc(collection(db, "diario_clamor"), {
+        userId: user.uid,
+        userName: user.displayName,
+        alvo: currentPrayer.title,
+        relato: prayerNote,
+        data: serverTimestamp()
       });
-      setNote('');
-      alert("✍️ Anotação salva com sucesso!");
-    } catch (e) {
-      console.error("Erro ao salvar nota:", e);
-      alert("Erro ao salvar. Tente novamente.");
-    } finally {
+
+      setShowSuccess(true);
+      
+      // Espera 1.5s para a mãe ver o check de sucesso e pula pro próximo
+      setTimeout(() => {
+        handleNextPrayer();
+        setIsSaving(false);
+      }, 1500);
+
+    } catch (error) {
+      console.error("Erro ao salvar no diário:", error);
+      alert("Ops! Tivemos um problema ao salvar. Tente novamente.");
       setIsSaving(false);
     }
   };
 
-  if (!prayers || prayers.length === 0) return <div className="p-20 text-center opacity-50 italic">Carregando alvos...</div>;
-
   return (
-    <div className="min-h-[85vh] flex flex-col items-center py-6 px-4 animate-fadeIn">
-      {/* Timer */}
-      <div className="text-6xl font-black text-[#2D1B4D] mb-6 tabular-nums tracking-tighter">
-        {formatTime(timeLeft)}
+    <div className="flex flex-col items-center gap-6 animate-fadeIn pb-20">
+      {/* Cronômetro */}
+      <div className="w-44 h-44 rounded-full border-[6px] border-brand-rose/10 flex items-center justify-center bg-white shadow-inner">
+        <div className="text-center">
+          <span className="text-5xl font-black text-[#2D1B4D] block tabular-nums tracking-tighter">
+            {formatTime(timeLeft)}
+          </span>
+          <span className="text-[9px] font-black text-brand-rose uppercase tracking-[0.2em]">
+            Minutos de Clamor
+          </span>
+        </div>
       </div>
-      
-      {/* Card de Oração */}
-      <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_15px_50px_rgba(92,0,184,0.1)] border border-purple-50 w-full max-w-sm text-center relative overflow-hidden mb-6">
-        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-orange-400 via-brand-rose to-purple-600"></div>
-        
-        <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest block mb-2">
-          Alvo {currentStep + 1} de 5
-        </span>
 
-        <h3 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-1 italic">
-          "Oração do Dia"
-        </h3>
-        
-        <span className="inline-block text-[9px] font-black text-purple-600 bg-purple-50 px-3 py-1 rounded-full uppercase mb-4 tracking-wider">
-          {alvoAtual?.category || alvoAtual?.categoria || 'Intercessão'}
-        </span>
+      {/* Card Dinâmico */}
+      <div className="w-full bg-white rounded-[2.5rem] p-7 shadow-2xl shadow-purple-100/50 border border-purple-50">
+        {!showSuccess ? (
+          <>
+            <div className="flex justify-between items-start mb-4">
+              <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                Alvo Atual
+              </span>
+            </div>
+            
+            <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-2 leading-tight">
+              {currentPrayer?.title}
+            </h2>
+            <p className="text-gray-500 text-sm mb-6 leading-relaxed italic">
+              "{currentPrayer?.description}"
+            </p>
 
-        <p className="text-gray-600 text-base leading-relaxed italic mb-6">
-          "{alvoAtual?.description || alvoAtual?.descricao}"
-        </p>
+            <textarea
+              value={prayerNote}
+              onChange={(e) => setPrayerNote(e.target.value)}
+              placeholder="O que o Espírito Santo ministrou em seu coração?"
+              className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-brand-rose mb-4 min-h-[120px] resize-none"
+            />
 
-        {(alvoAtual?.biblicalReference || alvoAtual?.referencia) && (
-          <div className="flex items-center justify-center gap-2 text-brand-rose font-bold text-[10px] bg-pink-50 py-2.5 px-4 rounded-xl mx-auto w-fit border border-pink-100/50">
-            <i className="fa-solid fa-book-bible"></i>
-            <span>{alvoAtual?.biblicalReference || alvoAtual?.referencia}</span>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={handleLogVictory}
+                disabled={isSaving || !prayerNote.trim()}
+                className={`w-full py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest shadow-lg transition-all ${
+                  prayerNote.trim() 
+                    ? 'bg-brand-rose text-white active:scale-95 shadow-rose-200' 
+                    : 'bg-gray-100 text-gray-400'
+                }`}
+              >
+                {isSaving ? 'Gravando...' : 'Registrar e Próximo Alvo'}
+              </button>
+              
+              <button
+                onClick={handleNextPrayer}
+                className="w-full py-3 text-[10px] font-black uppercase tracking-widest text-gray-400"
+              >
+                Pular este tema
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="py-12 text-center animate-bounce">
+            <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <p className="font-bold text-[#2D1B4D] serif-font text-xl">Memorial Atualizado!</p>
           </div>
         )}
       </div>
 
-      {/* Área do Diário */}
-      <div className="w-full max-w-sm bg-white rounded-[2rem] p-5 shadow-sm border border-purple-100">
-        <label className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em] ml-2 mb-2 block">
-          Diário de Clamor
-        </label>
-        <textarea 
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="O que o Espírito Santo falou ao seu coração agora?"
-          className="w-full bg-purple-50/30 border-none rounded-2xl p-4 text-sm text-gray-700 placeholder:text-gray-300 outline-none resize-none focus:ring-1 focus:ring-purple-200 transition-all"
-          rows={3}
-        />
-        <button 
-          onClick={salvarNoDiario}
-          disabled={!note.trim() || isSaving}
-          className="w-full mt-3 bg-brand-rose/10 text-brand-rose py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-brand-rose hover:text-white transition-all disabled:opacity-30"
+      {/* Controles do Timer */}
+      <div className="flex items-center gap-6">
+        <button
+          onClick={() => setIsTimerActive(!isTimerActive)}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl transition-all ${
+            isTimerActive ? 'bg-orange-500' : 'bg-brand-rose'
+          }`}
         >
-          {isSaving ? 'Salvando...' : 'Registrar Observação'}
+          {isTimerActive ? (
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          ) : (
+            <svg className="w-6 h-6 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          )}
+        </button>
+        
+        <button
+          onClick={onFinish}
+          className="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b-2 border-transparent hover:border-gray-200"
+        >
+          Encerrar Clamor
         </button>
       </div>
-
-      {/* Controle de Pausa/Play */}
-      <button 
-        onClick={() => setIsTimerActive(!isTimerActive)}
-        className={`mt-8 px-12 py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg transition-all active:scale-95 ${
-          isTimerActive ? 'bg-gray-100 text-gray-400' : 'bg-[#5c00b8] text-white shadow-purple-200'
-        }`}
-      >
-        {isTimerActive ? 'Pausar' : 'Continuar Clamor'}
-      </button>
     </div>
   );
 };
 
-export default Timer;
+export default TimerView;

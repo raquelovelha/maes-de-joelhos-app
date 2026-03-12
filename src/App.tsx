@@ -103,7 +103,7 @@ const App: React.FC = () => {
         );
       case 'community': return <CommunityView />;
       case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} onNavigate={setActiveTab} />;
-      case 'memorial': return <MemorialView user={user} onBack={() => setActiveTab('prayers')} />;
+      case 'memorial': return <MemorialView user={user} onBack={() => setActiveTab('home')} />;
       default: return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
@@ -111,7 +111,6 @@ const App: React.FC = () => {
   return (
     <div className="relative min-h-screen bg-[#FAFAFE] overflow-x-hidden">
       <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
-        {/* Container com padding bottom para evitar cortes nas logos e botões */}
         <main className="max-w-md mx-auto px-4 pb-32 pt-4">
           {renderView()}
         </main>

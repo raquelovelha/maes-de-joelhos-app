@@ -33,7 +33,7 @@ const Memorial: React.FC<{ user: any; onBack: () => void }> = ({ user, onBack })
         <button onClick={onBack} className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-brand-rose">
           <i className="fa-solid fa-arrow-left"></i>
         </button>
-        <h2 className="serif-font text-2xl font-bold text-[#2D1B4D]">Memorial de Vitórias</h2>
+        <h2 className="serif-font text-2xl font-bold text-[#2D1B4D]">Meu diário de oração</h2>
       </div>
 
       {loading ? (

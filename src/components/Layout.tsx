@@ -68,36 +68,29 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPe
       </main>
 
       {/* Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-brand-lavender py-3 px-6 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-lg border-t border-brand-lavender py-3 px-4 z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
+        <div className="max-w-lg mx-auto flex items-center justify-between gap-1">
           <NavItem icon="fa-house" label="Home" active={activeTab === 'home'} onClick={() => onTabChange('home')} />
           <NavItem icon="fa-book-bible" label="Orações" active={activeTab === 'prayers'} onClick={() => onTabChange('prayers')} />
           
           {/* BOTÃO CENTRAL: 15 MINUTOS DE CLAMOR */}
-          <div className="relative -mt-14 flex flex-col items-center gap-1.5">
+          <div className="relative -mt-12 flex flex-col items-center gap-1.5 px-2">
             <button 
                 onClick={() => onTabChange('timer')}
-                className={`w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-white border-4 border-white transform transition active:scale-90 hover:scale-105 group ${
+                className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-white border-4 border-white transform transition active:scale-90 hover:scale-105 group ${
                   activeTab === 'timer' ? 'bg-[#5c00b8]' : 'bg-gradient-to-br from-[#FF5722] to-[#FF8A65]'
                 }`}
             >
-              <i className={`fa-solid ${activeTab === 'timer' ? 'fa-hands-praying' : 'fa-stopwatch'} text-2xl group-hover:rotate-12 transition-transform`}></i>
+              <i className={`fa-solid ${activeTab === 'timer' ? 'fa-hands-praying' : 'fa-stopwatch'} text-xl group-hover:rotate-12 transition-transform`}></i>
             </button>
-            
-            {/* Legenda de Destaque */}
-            <span className="text-[7px] font-black text-[#FF5722] uppercase tracking-[0.1em] bg-orange-50 px-2.5 py-1 rounded-full shadow-sm whitespace-nowrap border border-orange-100">
-              15 min de Clamor
+            <span className="text-[6px] font-black text-[#FF5722] uppercase tracking-[0.1em] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100 whitespace-nowrap">
+              Clamor
             </span>
           </div>
 
-          <NavItem 
-            icon="fa-person-praying" 
-            label="Filhos" 
-            active={activeTab === 'filhos'} 
-            onClick={() => onTabChange('filhos')} 
-            badge={hasPending}
-          />
-          <NavItem icon="fa-users" label="Comunidade" active={activeTab === 'community'} onClick={() => onTabChange('community')} />
+          <NavItem icon="fa-person-praying" label="Filhos" active={activeTab === 'filhos'} onClick={() => onTabChange('filhos')} badge={hasPending} />
+          <NavItem icon="fa-book-open" label="Diário" active={activeTab === 'memorial'} onClick={() => onTabChange('memorial')} />
+          <NavItem icon="fa-users" label="Comu" active={activeTab === 'community'} onClick={() => onTabChange('community')} />
         </div>
       </nav>
     </div>
@@ -105,14 +98,14 @@ const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange, hasPe
 };
 
 const NavItem = ({ icon, label, active, onClick, badge }: { icon: string, label: string, active: boolean, onClick: () => void, badge?: boolean }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1.5 transition-all duration-300 relative ${active ? 'text-brand-rose scale-105 font-black' : 'text-gray-400 opacity-60'}`}>
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-all duration-300 relative flex-1 ${active ? 'text-brand-rose scale-105 font-black' : 'text-gray-400 opacity-60'}`}>
     {badge && !active && (
-      <div className="absolute top-0 right-1 w-2.5 h-2.5 bg-brand-gc border-2 border-white rounded-full animate-pulse z-10"></div>
+      <div className="absolute top-0 right-1/4 w-2 h-2 bg-brand-gc border-2 border-white rounded-full animate-pulse z-10"></div>
     )}
-    <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${active ? 'bg-brand-pink' : ''}`}>
-        <i className={`fa-solid ${icon} text-lg`}></i>
+    <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${active ? 'bg-brand-pink' : ''}`}>
+        <i className={`fa-solid ${icon} text-sm`}></i>
     </div>
-    <span className="text-[9px] uppercase tracking-tighter">{label}</span>
+    <span className="text-[8px] uppercase tracking-tighter font-bold">{label}</span>
   </button>
 );
 
