@@ -22,12 +22,12 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null); 
-  
   const [timerSeconds, setTimerSeconds] = useState(15 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Missionária", birthDate: "", church: "", participationTime: "Iniciante", groupName: ""
+    name: "Missionária", birthDate: "", church: "", participationTime: "Iniciante", groupName: "",
+    lastPrayerIndex: 0, ultimoResumo: ""
   });
 
   const [stats, setStats] = useState<UserStats>({ 
@@ -69,30 +69,39 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (activeTab) {
-      case 'home': return <HomeView profile={profile} onNavigate={setActiveTab} />;
-      case 'prayers': return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} onNavigate={setActiveTab} />;
+      case 'home': 
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      case 'prayers': 
+        return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} onNavigate={setActiveTab} />;
       case 'timer':
         return (
           <TimerView 
             user={user}
+            userProfile={profile}
             prayers={prayers} 
             timeLeft={timerSeconds}
             setTimeLeft={setTimerSeconds}
             isTimerActive={isTimerRunning}
             setIsTimerActive={setIsTimerRunning}
-            onFinish={async () => {
-              // CALCULA E SALVA OS MINUTOS
-              const totalSessionSeconds = (15 * 60) - timerSeconds;
-              const minutesToRegister = Math.floor(totalSessionSeconds / 60);
+            onFinish={async (sessionLogs) => {
+              const totalSeconds = (15 * 60) - timerSeconds;
+              const minutes = Math.floor(totalSeconds / 60);
 
-              if (minutesToRegister > 0 && user) {
-                try {
-                  const userRef = doc(db, "usuarios", user.uid);
-                  await updateDoc(userRef, {
-                    minutosIntercedidos: increment(minutesToRegister),
-                    ultimoDiaOrado: new Date().toISOString().split('T')[0]
-                  });
-                } catch (e) { console.error("Erro ao salvar progresso:", e); }
+              if (user && minutes > 0) {
+                const userRef = doc(db, "usuarios", user.uid);
+                
+                // Lógica de Resumo Inteligente
+                let resumo = "";
+                if (sessionLogs.length > 0) {
+                  const temas = sessionLogs.map(l => l.split(':')[0]).join(', ');
+                  resumo = `Na sua última intercessão, você clamou por: ${temas}. Deus ouviu cada palavra sobre seus relatos no diário.`;
+                }
+
+                await updateDoc(userRef, {
+                  minutosIntercedidos: increment(minutes),
+                  ultimoDiaOrado: new Date().toISOString().split('T')[0],
+                  ultimoResumo: resumo
+                });
               }
 
               setActiveTab('home');
