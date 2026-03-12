@@ -1,9 +1,13 @@
 export const INSTITUTIONAL = {
-  logoUrl: "https://www.despertadebora.com.br/wp-content/uploads/Logo-Desperta-Debora-mundial-300x157.png.webp",
-  gcLogoUrl: "https://www.mpc.org.br/wp-content/uploads/elementor/thumbs/GC-retangulo-horizontal-cores_gradiente-fundoescuro-r0qgxhoa7f2itgig2ffvzmlw46oqxv88sbwggdswe8.png",
+  // Logo Desperta Débora (a que você enviou antes)
+  logoUrl: "https://www.despertadebora.com.br/wp-content/uploads/cropped-logo-registrado-1-PNG-300x157.png.webp",
+  
+  // NOVA LOGO GC PARA FUNDO CLARO:
+  gcLogoUrl: "https://i.postimg.cc/MKLSGrq8/GC_horizontal_cores_gradiente_fundoclaro.png",
+  
   phrase: "Mães de joelhos, filhos de pé!",
   footerText: "Somos um departamento da MPC (Mocidade Para Cristo) e trabalhamos juntamente com todos os departamentos desta missão.",
-   ministryName: "Desperta Débora"
+  ministryName: "Desperta Débora"
 };
 
 export const COLORS = {

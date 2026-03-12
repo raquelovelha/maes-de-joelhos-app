@@ -83,35 +83,36 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
         </button>
       </div>
 
-      {/* RODAPÉ INSTITUCIONAL */}
+  {/* RODAPÉ INSTITUCIONAL */}
       <footer className="mt-12 pt-10 border-t border-brand-lavender/50 flex flex-col items-center gap-8 pb-12">
-        <div className="flex items-center justify-center gap-6">
-          {/* Logo Desperta Débora (Link Novo) */}
+        <div className="flex items-center justify-center gap-8 opacity-90">
+          {/* Logo Desperta Débora */}
           <img 
             src={INSTITUTIONAL.logoUrl} 
             alt="Desperta Débora" 
-            className="h-12 w-auto object-contain" 
+            className="h-10 w-auto object-contain" 
           />
           
+          {/* Divisor sutil */}
           <div className="h-8 w-[1px] bg-gray-200"></div>
 
-          {/* Logo Geração Compromisso (Fundo escuro para a logo do GC aparecer) */}
-          <div className="bg-[#2D1B4D] p-2 rounded-xl">
-            <img 
-              src={INSTITUTIONAL.gcLogoUrl} 
-              alt="Geração Compromisso" 
-              className="h-8 w-auto object-contain" 
-            />
-          </div>
+          {/* Logo Geração Compromisso (Agora limpa no fundo claro) */}
+          <img 
+            src={INSTITUTIONAL.gcLogoUrl} 
+            alt="Geração Compromisso" 
+            className="h-10 w-auto object-contain" 
+          />
         </div>
         
         <div className="text-center px-6">
-          <p className="text-[10px] font-medium text-gray-500 leading-relaxed italic max-w-[280px] mx-auto">
+          <p className="text-[10px] font-medium text-gray-400 leading-relaxed italic max-w-[280px] mx-auto">
             {INSTITUTIONAL.footerText}
           </p>
-          <p className="text-[10px] font-black text-[#2D1B4D] uppercase tracking-widest mt-4">
-            Mocidade para Cristo do Brasil
-          </p>
+          <div className="mt-4 bg-gray-50 px-4 py-2 rounded-full inline-block border border-gray-100">
+            <p className="text-[10px] font-black text-[#2D1B4D] uppercase tracking-widest">
+              Mocidade para Cristo do Brasil
+            </p>
+          </div>
         </div>
         
         <p className="text-[8px] text-gray-400 font-medium">© 2026 {INSTITUTIONAL.ministryName}</p>
