@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAuth, onAuthStateChanged, User } from 'firebase/auth'; 
-import { doc, onSnapshot } from 'firebase/firestore'; 
+import { doc, onSnapshot, updateDoc, increment } from 'firebase/firestore'; 
 import { db } from './firebase'; 
 
 import Layout from './components/Layout';
@@ -27,11 +27,7 @@ const App: React.FC = () => {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
   const [profile, setProfile] = useState<UserProfile>({
-    name: "Missionária",
-    birthDate: "",
-    church: "",
-    participationTime: "Iniciante",
-    groupName: ""
+    name: "Missionária", birthDate: "", church: "", participationTime: "Iniciante", groupName: ""
   });
 
   const [stats, setStats] = useState<UserStats>({ 
@@ -73,10 +69,8 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (activeTab) {
-      case 'home':
-        return <HomeView profile={profile} onNavigate={setActiveTab} />;
-      case 'prayers':
-        return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} onNavigate={setActiveTab} />;
+      case 'home': return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      case 'prayers': return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} onNavigate={setActiveTab} />;
       case 'timer':
         return (
           <TimerView 
@@ -86,21 +80,30 @@ const App: React.FC = () => {
             setTimeLeft={setTimerSeconds}
             isTimerActive={isTimerRunning}
             setIsTimerActive={setIsTimerRunning}
-            onFinish={() => {
+            onFinish={async () => {
+              // CALCULA E SALVA OS MINUTOS
+              const totalSessionSeconds = (15 * 60) - timerSeconds;
+              const minutesToRegister = Math.floor(totalSessionSeconds / 60);
+
+              if (minutesToRegister > 0 && user) {
+                try {
+                  const userRef = doc(db, "usuarios", user.uid);
+                  await updateDoc(userRef, {
+                    minutosIntercedidos: increment(minutesToRegister),
+                    ultimoDiaOrado: new Date().toISOString().split('T')[0]
+                  });
+                } catch (e) { console.error("Erro ao salvar progresso:", e); }
+              }
+
               setActiveTab('home');
               setIsTimerRunning(false);
               setTimerSeconds(15 * 60);
             }} 
+            onViewDiary={() => setActiveTab('memorial')}
           />
         );
       case 'filhos':
-        return (
-          <FilhosView 
-            children={children} onAddChild={addChild} onDeleteChild={deleteChild} 
-            onAddRequest={addRequest} onToggleRequest={toggleRequestStatus} 
-            onRegisterPrayer={registerPrayerTime} onAccept={() => {}} 
-          />
-        );
+        return <FilhosView children={children} onAddChild={addChild} onDeleteChild={deleteChild} onAddRequest={addRequest} onToggleRequest={toggleRequestStatus} onRegisterPrayer={registerPrayerTime} onAccept={() => {}} />;
       case 'community': return <CommunityView />;
       case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} onNavigate={setActiveTab} />;
       case 'memorial': return <MemorialView user={user} onBack={() => setActiveTab('home')} />;
