@@ -83,24 +83,23 @@ const App: React.FC = () => {
             setTimeLeft={setTimerSeconds}
             isTimerActive={isTimerRunning}
             setIsTimerActive={setIsTimerRunning}
-            onFinish={async (sessionLogs) => {
+            onFinish={async (sessionLogs, currentIdx) => {
               const totalSeconds = (15 * 60) - timerSeconds;
               const minutes = Math.floor(totalSeconds / 60);
 
-              if (user && minutes > 0) {
+              if (user) {
                 const userRef = doc(db, "usuarios", user.uid);
                 
-                // Lógica de Resumo Inteligente
                 let resumo = "";
                 if (sessionLogs.length > 0) {
-                  const temas = sessionLogs.map(l => l.split(':')[0]).join(', ');
-                  resumo = `Na sua última intercessão, você clamou por: ${temas}. Deus ouviu cada palavra sobre seus relatos no diário.`;
+                  resumo = `Na última intercessão, orou por pedidos importantes. Deus ouviu o seu clamor sobre ${sessionLogs.length} alvo(s) e as suas anotações foram guardadas.`;
                 }
 
                 await updateDoc(userRef, {
-                  minutosIntercedidos: increment(minutes),
+                  minutosIntercedidos: increment(minutes > 0 ? minutes : 0),
                   ultimoDiaOrado: new Date().toISOString().split('T')[0],
-                  ultimoResumo: resumo
+                  ultimoResumo: resumo,
+                  lastPrayerIndex: currentIdx // Salva o índice atual para continuar daqui ou do próximo
                 });
               }
 
