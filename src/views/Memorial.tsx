@@ -14,7 +14,7 @@ const MemorialView: React.FC<MemorialProps> = ({ user, onBack }) => {
   useEffect(() => {
     if (!user) return;
 
-    // Busca na coleção correta que definimos no Timer
+    // AQUI ESTÁ O SEGREDO: Apontando para a coleção nova 'diario_clamor'
     const q = query(
       collection(db, "diario_clamor"),
       where("userId", "==", user.uid),
@@ -37,38 +37,48 @@ const MemorialView: React.FC<MemorialProps> = ({ user, onBack }) => {
   }, [user]);
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn pb-20">
-      <header className="flex items-center justify-between">
-        <button onClick={onBack} className="text-brand-rose flex items-center gap-2">
-          <i className="fa-solid fa-chevron-left"></i>
-          <span className="text-xs font-black uppercase">Voltar</span>
+    <div className="flex flex-col gap-6 animate-fadeIn pb-24">
+      <header className="flex items-center gap-4">
+        <button 
+          onClick={onBack} 
+          className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-brand-rose active:scale-90 transition-all"
+        >
+          <i className="fa-solid fa-arrow-left"></i>
         </button>
-        <h2 className="serif-font text-xl font-bold text-brand-dark">Meu Diário</h2>
-        <div className="w-8"></div>
+        <h2 className="serif-font text-2xl font-bold text-[#2D1B4D]">Meu Diário de Clamor</h2>
       </header>
 
       {loading ? (
-        <div className="text-center py-20 text-gray-400">Carregando memórias...</div>
+        <div className="text-center py-20">
+          <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-brand-rose rounded-full mb-2"></div>
+          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Buscando memórias...</p>
+        </div>
       ) : logs.length === 0 ? (
-        <div className="bg-white rounded-[2rem] p-10 text-center border border-dashed border-brand-lavender">
-          <i className="fa-solid fa-pen-nib text-3xl text-brand-lavender mb-4"></i>
-          <p className="text-gray-500 text-sm">Você ainda não registrou nenhuma anotação hoje. Suas vitórias aparecerão aqui!</p>
+        <div className="bg-white rounded-[2.5rem] p-12 text-center border border-dashed border-brand-lavender shadow-inner">
+          <i className="fa-solid fa-pen-fancy text-4xl text-brand-lavender/40 mb-4"></i>
+          <p className="text-gray-500 text-sm italic">"Suas vitórias e intercessões aparecerão aqui para que você nunca esqueça o que o Senhor falou ao seu coração."</p>
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {logs.map((log) => (
-            <div key={log.id} className="bg-white rounded-3xl p-6 shadow-sm border border-brand-lavender/30">
-              <div className="flex justify-between items-start mb-3">
+            <div key={log.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-purple-50 relative overflow-hidden group">
+              {/* Detalhe lateral colorido */}
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand-rose opacity-20"></div>
+              
+              <div className="flex justify-between items-center mb-4">
                 <span className="bg-brand-rose/10 text-brand-rose text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
                   {log.alvo}
                 </span>
-                <span className="text-[10px] text-gray-400">
-                  {log.data?.toDate().toLocaleDateString('pt-BR')}
+                <span className="text-[10px] font-bold text-gray-300">
+                  {log.data?.toDate() ? log.data.toDate().toLocaleDateString('pt-BR') : 'Recentemente'}
                 </span>
               </div>
-              <p className="text-[#2D1B4D] text-sm leading-relaxed italic">
-                "{log.relato}"
-              </p>
+              
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <p className="text-[#2D1B4D] text-sm leading-relaxed italic opacity-80">
+                  "{log.relato}"
+                </p>
+              </div>
             </div>
           ))}
         </div>
