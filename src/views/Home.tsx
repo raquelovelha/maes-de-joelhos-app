@@ -20,7 +20,7 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
       {/* Header de Boas-vindas */}
       <section>
         <h1 className="text-3xl serif-font font-bold text-brand-dark">
-          {getGreeting()}, <span className="text-brand-rose">{profile.name.split(' ')[0]}</span>
+          {getGreeting()}, <span className="text-brand-rose">{profile.name?.split(' ')[0] || 'Débora'}</span>
         </h1>
         <p className="text-gray-500 text-sm mt-1">O Senhor tem ouvido o seu clamor.</p>
       </section>
@@ -71,12 +71,12 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
 
       {/* Atalhos Rápidos */}
       <div className="grid grid-cols-2 gap-4">
-        <button onClick={() => onNavigate('prayers')} className="bg-white p-5 rounded-[2rem] border border-purple-50 shadow-sm flex flex-col items-start">
+        <button onClick={() => onNavigate('prayers')} className="bg-white p-5 rounded-[2rem] border border-purple-50 shadow-sm flex flex-col items-start active:scale-95 transition-all">
           <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center mb-4"><i className="fa-solid fa-book-bible"></i></div>
-          <h3 className="font-bold text-[#2D1B4D] text-sm">Temas</h3>
-          <p className="text-[10px] text-gray-400 mt-1">Alvos de oração</p>
+          <h3 className="font-bold text-[#2D1B4D] text-sm">Pedidos</h3>
+          <p className="text-[10px] text-gray-400 mt-1">Lista de oração</p>
         </button>
-        <button onClick={() => onNavigate('filhos')} className="bg-white p-5 rounded-[2rem] border border-purple-50 shadow-sm flex flex-col items-start">
+        <button onClick={() => onNavigate('filhos')} className="bg-white p-5 rounded-[2rem] border border-purple-50 shadow-sm flex flex-col items-start active:scale-95 transition-all">
           <div className="w-10 h-10 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-4"><i className="fa-solid fa-child-reaching"></i></div>
           <h3 className="font-bold text-[#2D1B4D] text-sm">Meus Filhos</h3>
           <p className="text-[10px] text-gray-400 mt-1">Gerenciar lista</p>
@@ -84,22 +84,32 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
       </div>
 
       {/* RODAPÉ INSTITUCIONAL */}
-      <footer className="mt-8 pt-8 border-t border-brand-lavender flex flex-col items-center gap-6">
-        <div className="flex items-center justify-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all">
-          {/* Logo Desperta Débora */}
-          <img src={INSTITUTIONAL.logoUrl} alt="Desperta Débora" className="h-8 w-auto object-contain" />
-          {/* Logo Geração Compromisso - Aqui você pode usar a URL da logo se tiver no constants */}
-          <div className="flex flex-col items-center">
-            <span className="text-[8px] font-black text-[#2D1B4D] tracking-tighter uppercase">Geração</span>
-            <span className="text-[8px] font-black text-brand-rose tracking-tighter uppercase mt-[-4px]">Compromisso</span>
+      <footer className="mt-12 pt-10 border-t border-brand-lavender/50 flex flex-col items-center gap-8 pb-12">
+        <div className="flex items-center justify-center gap-6">
+          {/* Logo Desperta Débora (Link Novo) */}
+          <img 
+            src={INSTITUTIONAL.logoUrl} 
+            alt="Desperta Débora" 
+            className="h-12 w-auto object-contain" 
+          />
+          
+          <div className="h-8 w-[1px] bg-gray-200"></div>
+
+          {/* Logo Geração Compromisso (Fundo escuro para a logo do GC aparecer) */}
+          <div className="bg-[#2D1B4D] p-2 rounded-xl">
+            <img 
+              src={INSTITUTIONAL.gcLogoUrl} 
+              alt="Geração Compromisso" 
+              className="h-8 w-auto object-contain" 
+            />
           </div>
         </div>
         
-        <div className="text-center">
-          <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-1">
-            Um movimento da
+        <div className="text-center px-6">
+          <p className="text-[10px] font-medium text-gray-500 leading-relaxed italic max-w-[280px] mx-auto">
+            {INSTITUTIONAL.footerText}
           </p>
-          <p className="text-[10px] font-black text-[#2D1B4D] uppercase tracking-widest">
+          <p className="text-[10px] font-black text-[#2D1B4D] uppercase tracking-widest mt-4">
             Mocidade para Cristo do Brasil
           </p>
         </div>
