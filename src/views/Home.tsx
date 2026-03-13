@@ -1,7 +1,8 @@
 import React from 'react';
 import { UserProfile } from '../types';
 import { INSTITUTIONAL } from '../constants';
-import { executarCarga } from '../utils/CargaDados'; // Certifique-se de que o caminho está correto
+import { executarCarga } from '../utils/cargadados.ts';
+import pedidosData from './pedidos.json';
 
 interface HomeProps {
   profile: UserProfile;
