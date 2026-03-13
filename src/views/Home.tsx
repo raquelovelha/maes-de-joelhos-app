@@ -1,7 +1,6 @@
 import React from 'react';
 import { UserProfile } from '../types';
 import { INSTITUTIONAL } from '../constants';
-import { executarCarga } from '../utils/cargadados.ts';
 
 interface HomeProps {
   profile: UserProfile;
@@ -19,14 +18,6 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
   return (
     <div className="flex flex-col gap-6 animate-fadeIn pb-12">
       
-      {/* BOTÃO TEMPORÁRIO DE ADMIN - APARECE NO TOPO PARA VOCÊ CLICAR */}
-      <button 
-        onClick={() => executarCarga()} 
-        className="bg-red-600 text-white p-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
-      >
-        <i className="fa-solid fa-database mr-2"></i>
-        ADMIN: Carregar 105 Pedidos (Firebase)
-      </button>
 
       {/* Header de Boas-vindas */}
       <section>
