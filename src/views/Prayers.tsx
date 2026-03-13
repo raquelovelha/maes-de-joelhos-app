@@ -4,7 +4,7 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Mapeamento exato dos temas da sua planilha para os botões do App
+  // Lista de categorias com o "match" EXATO do texto da sua planilha
   const categories = [
     { id: 'CARATER', label: 'Caráter', icon: 'fa-gem', color: '#64748B', match: 'Caráter, Valores e Emoções' },
     { id: 'FUTURO', label: 'Futuro', icon: 'fa-graduation-cap', color: '#8B5CF6', match: 'Educação, Futuro e Propósito' },
@@ -19,23 +19,25 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
 
   const filteredPrayers = useMemo(() => {
     if (!selectedCategory) return [];
-    const config = categories.find(c => c.id === selectedCategory);
     
+    const config = categories.find(c => c.id === selectedCategory);
+    if (!config) return [];
+
     return prayers.filter((p: any) => {
-      // Compara o tema do Firebase com o 'match' da nossa lista acima
-      const pCat = (p.categoria || p.tema || '').trim();
-      const target = (config?.match || '').trim();
+      // Normalização rigorosa para garantir que o clique funcione
+      const pCat = String(p.tema || p.categoria || '').trim().toLowerCase();
+      const target = String(config.match).trim().toLowerCase();
       
-      const content = ((p.texto || '') + (p.versiculo || '')).toLowerCase();
+      const content = String((p.texto || p.pedido || '') + (p.versiculo || p.referencia || '')).toLowerCase();
       const matchesSearch = content.includes(searchTerm.toLowerCase());
 
+      // Retorna verdadeiro apenas se a categoria do banco for idêntica ao tema da planilha
       return pCat === target && matchesSearch;
-    }).sort((a, b) => (Number(a.dia) || 0) - (Number(b.dia) || 0)); // Ordena pelos números (1, 2, 11...)
+    }).sort((a, b) => (Number(a.dia) || 0) - (Number(b.dia) || 0));
   }, [prayers, searchTerm, selectedCategory]);
 
   return (
     <div className="flex flex-col gap-6 pb-24 pt-4 animate-fadeIn px-1">
-      
       {/* BUSCA */}
       <div className="relative mx-1">
         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
@@ -48,7 +50,7 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
         />
       </div>
 
-      {/* GRADE DE CATEGORIAS (3 Colunas para caber as 9) */}
+      {/* GRADE DE TEMAS */}
       <div className="flex flex-col gap-4">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Pastas de Clamor</h3>
         <div className="grid grid-cols-3 gap-2">
@@ -65,72 +67,63 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
                    className={`w-10 h-10 rounded-xl flex items-center justify-center text-base mb-2 ${selectedCategory === cat.id ? 'text-white' : 'text-gray-400'}`}>
                 <i className={`fa-solid ${cat.icon}`}></i>
               </div>
-              <span className="text-[8px] font-black uppercase text-center leading-tight text-gray-500">
-                {cat.label}
-              </span>
+              <span className="text-[8px] font-black uppercase text-center leading-tight text-gray-500">{cat.label}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* MEMORIAL */}
+      {/* DIÁRIO */}
       {!selectedCategory && (
         <button 
           onClick={() => onNavigate('memorial')}
           className="bg-white border-2 border-brand-rose/10 p-5 rounded-[2rem] flex items-center gap-4 mx-1 shadow-sm"
         >
           <div className="w-10 h-10 rounded-xl bg-brand-rose/10 flex items-center justify-center text-brand-rose">
-            <i className="fa-solid fa-book-open text-sm"></i>
+            <i className="fa-solid fa-book-open"></i>
           </div>
           <div className="text-left flex-1">
             <h4 className="font-bold text-[#2D1B4D] text-xs">Memorial de Vitórias</h4>
-            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest">Revisitar Diário</p>
+            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest">Ver Diário</p>
           </div>
         </button>
       )}
 
-      {/* LISTA DE PEDIDOS */}
+      {/* LISTA FILTRADA */}
       {selectedCategory && (
         <div className="flex flex-col gap-4 mt-2 animate-slideUp mx-1">
-            <div className="flex items-center justify-between px-2 pb-2">
+            <div className="flex items-center justify-between px-2 pb-2 border-b border-gray-100">
                 <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
                   {categories.find(c => c.id === selectedCategory)?.label} ({filteredPrayers.length})
                 </h3>
-                <button onClick={() => setSelectedCategory(null)} className="text-[10px] text-brand-rose font-black uppercase">
-                   Fechar
-                </button>
+                <button onClick={() => setSelectedCategory(null)} className="text-[10px] text-brand-rose font-black uppercase">Fechar</button>
             </div>
             
             {filteredPrayers.length === 0 && (
-              <p className="text-center py-10 text-gray-400 text-[10px] uppercase font-bold tracking-widest">Pasta vazia ou carregando...</p>
+              <div className="text-center py-12">
+                <i className="fa-solid fa-folder-open text-gray-200 text-3xl mb-3"></i>
+                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest px-4">
+                  Nenhum pedido encontrado nesta categoria.
+                </p>
+              </div>
             )}
 
             {filteredPrayers.map((p: any) => (
                 <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 flex flex-col gap-4 relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: categories.find(c => c.id === selectedCategory)?.color }}></div>
-                    
                     <div className="flex justify-between items-start">
-                        {/* Exibe o número do pedido (1, 11, 104...) */}
-                        <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-0.5 rounded-full">
-                          Pedido #{p.dia || p.ordem || '---'}
-                        </span>
+                        <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Alvo #{p.dia || p.ordem || p.id}</span>
                         <button onClick={() => toggleFavorite(p.id)}>
                             <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star ${p.isFavorite ? 'text-yellow-400' : 'text-gray-200'}`}></i>
                         </button>
                     </div>
-                    
-                    <p className="text-[#2D1B4D] text-sm leading-relaxed italic">
-                      "{p.texto}"
-                    </p>
-
-                    {p.versiculo && (
+                    <p className="text-[#2D1B4D] text-sm leading-relaxed font-medium">"{p.texto || p.pedido}"</p>
+                    {(p.versiculo || p.referencia) && (
                       <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100">
                         <span className="text-[9px] font-black text-brand-rose uppercase block mb-1">
-                          <i className="fa-solid fa-book-open mr-1"></i> {p.versiculo}
+                          <i className="fa-solid fa-book-open mr-1"></i> {p.versiculo || p.referencia}
                         </span>
-                        {p.texto_biblico && (
-                          <p className="text-[11px] text-gray-500 leading-tight italic">"{p.texto_biblico}"</p>
-                        )}
+                        {p.texto_biblico && <p className="text-[11px] text-gray-500 leading-tight italic">"{p.texto_biblico}"</p>}
                       </div>
                     )}
                 </div>

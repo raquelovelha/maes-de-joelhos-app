@@ -15,12 +15,11 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
     return () => clearInterval(interval);
   }, [isTimerActive, timeLeft]);
 
-  // Se a lista de orações vier vazia do Hook usePrayers
   if (!prayers || prayers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-[#FF4DAD]">
         <div className="w-10 h-10 border-4 border-[#FF4DAD] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="font-bold text-[10px] tracking-widest">Sincronizando com o Céu...</p>
+        <p className="font-bold text-[10px] tracking-widest uppercase">Sincronizando pedidos...</p>
       </div>
     );
   }
@@ -37,41 +36,32 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
   return (
     <div className="flex flex-col items-center gap-6 animate-fadeIn pb-20">
       <div className="bg-[#FF4DAD]/10 text-[#FF4DAD] px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-        Intercessão Diária • Dia {currentPrayer?.dia || currentPrayerIndex + 1}
+        Intercessão • {currentPrayer?.tema || currentPrayer?.categoria || "Clamor"}
       </div>
 
       <div className="w-44 h-44 rounded-full border-[6px] border-[#FF4DAD]/10 flex items-center justify-center bg-white shadow-inner">
         <div className="text-center">
           <span className="text-5xl font-black text-[#2D1B4D] block tabular-nums">{formatTime(timeLeft)}</span>
-          <span className="text-[9px] font-black text-[#FF4DAD] uppercase tracking-[0.2em]">{isTimerActive ? "Clamor Ativo" : "Pausado"}</span>
+          <span className="text-[9px] font-black text-[#FF4DAD] uppercase tracking-[0.2em]">{isTimerActive ? "Ativo" : "Pausado"}</span>
         </div>
       </div>
 
       <div className="w-full bg-white rounded-[2.5rem] p-8 shadow-2xl border border-purple-50">
-        <span className="text-[10px] font-black uppercase tracking-widest text-[#FF4DAD] block mb-2">
-          {currentPrayer?.categoria || "Motivo de Oração"}
-        </span>
-        
-        {/* Aqui garantimos que se o texto falhar, avisamos o que aconteceu */}
         <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-6 leading-tight">
-          {currentPrayer?.texto || "Verifique a conexão ou se há orações cadastradas."}
+          {currentPrayer?.texto || currentPrayer?.pedido || "Iniciando oração..."}
         </h2>
 
-        {/* VERSÍCULO DINÂMICO */}
-        {currentPrayer?.versiculo && (
+        {(currentPrayer?.versiculo || currentPrayer?.referencia) && (
           <div className="mb-6 bg-purple-50 rounded-2xl p-4 border-l-4 border-[#FF4DAD]">
             <div className="flex items-center gap-2 mb-2">
                <i className="fa-solid fa-book-open text-[#FF4DAD] text-[10px]"></i>
-               <span className="text-[#FF4DAD] font-black text-[10px] uppercase tracking-widest">{currentPrayer.versiculo}</span>
+               <span className="text-[#FF4DAD] font-black text-[10px] uppercase tracking-widest">
+                 {currentPrayer.versiculo || currentPrayer.referencia}
+               </span>
             </div>
             {currentPrayer.texto_biblico && (
-              <p className="text-[#2D1B4D] text-[13px] leading-relaxed italic mb-3 opacity-90">
-                "{currentPrayer.texto_biblico}"
-              </p>
+              <p className="text-[#2D1B4D] text-[13px] leading-relaxed italic opacity-90">"{currentPrayer.texto_biblico}"</p>
             )}
-            <p className="text-[#FF4DAD] text-[10px] font-bold border-t border-[#FF4DAD]/10 pt-2">
-               Medite nesta Palavra enquanto clama por este alvo.
-            </p>
           </div>
         )}
         
@@ -79,7 +69,7 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
           value={prayerNote}
           onChange={(e) => setPrayerNote(e.target.value)}
           placeholder="Escreva aqui e mantenha o seu diário de oração"
-          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-6 min-h-[120px] focus:ring-1 focus:ring-[#FF4DAD]/20"
+          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-6 min-h-[120px] focus:ring-1 focus:ring-[#FF4DAD]/20 outline-none"
         />
         
         <button
@@ -89,7 +79,7 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
             try {
               await addDoc(collection(db, "diario_clamor"), { 
                 userId: user.uid, 
-                alvo: currentPrayer?.categoria || "Intercessão", 
+                alvo: currentPrayer?.tema || currentPrayer?.categoria || "Oração", 
                 relato: prayerNote, 
                 data: serverTimestamp() 
               });
@@ -103,16 +93,11 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
         </button>
       </div>
 
-      <div className="flex flex-col items-center gap-4">
-        <div className="flex items-center gap-6">
-          <button onClick={() => setIsTimerActive(!isTimerActive)} className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl ${isTimerActive ? 'bg-orange-500' : 'bg-[#FF4DAD]'}`}>
-            <i className={`fa-solid ${isTimerActive ? 'fa-pause' : 'fa-play'} text-xl`}></i>
-          </button>
-          <button onClick={() => onFinish([], currentPrayerIndex)} className="text-[10px] font-black uppercase text-gray-400">Encerrar Clamor</button>
-        </div>
-        <button onClick={onViewDiary} className="text-[10px] font-black uppercase text-[#FF4DAD] flex items-center gap-2 opacity-60">
-           <i className="fa-solid fa-book-open"></i> Abrir meu diário de oração
+      <div className="flex items-center gap-6">
+        <button onClick={() => setIsTimerActive(!isTimerActive)} className={`w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl ${isTimerActive ? 'bg-orange-500' : 'bg-[#FF4DAD]'}`}>
+          <i className={`fa-solid ${isTimerActive ? 'fa-pause' : 'fa-play'} text-xl`}></i>
         </button>
+        <button onClick={() => onFinish([], currentPrayerIndex)} className="text-[10px] font-black uppercase text-gray-400">Finalizar</button>
       </div>
     </div>
   );
