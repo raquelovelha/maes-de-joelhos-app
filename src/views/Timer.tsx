@@ -40,7 +40,7 @@ const TimerView: React.FC<TimerProps> = ({
     return () => clearInterval(interval);
   }, [isTimerActive, timeLeft]);
 
-  // Pega o pedido atual com proteção contra lista vazia
+  // Pega o pedido atual
   const currentPrayer = prayers && prayers.length > 0 ? prayers[currentPrayerIndex % prayers.length] : null;
 
   const handleNextPrayer = async () => {
@@ -61,12 +61,12 @@ const TimerView: React.FC<TimerProps> = ({
     try {
       await addDoc(collection(db, "diario_clamor"), {
         userId: user.uid,
-        alvo: currentPrayer?.tema || `Pedido #${currentPrayerIndex + 1}`,
+        alvo: currentPrayer?.categoria || currentPrayer?.tema || `Dia ${currentPrayerIndex + 1}`,
         relato: prayerNote,
         data: serverTimestamp()
       });
 
-      setSessionLogs(prev => [...prev, `${currentPrayer?.tema || 'Oração'}: ${prayerNote}`]);
+      setSessionLogs(prev => [...prev, `${currentPrayer?.categoria || 'Oração'}: ${prayerNote}`]);
 
       const nextIndex = currentPrayerIndex + 1;
       const userRef = doc(db, "usuarios", user.uid);
@@ -109,31 +109,31 @@ const TimerView: React.FC<TimerProps> = ({
         {!showSuccess ? (
           <>
             <span className="text-[10px] font-black uppercase tracking-widest text-brand-rose block mb-1">
-              {currentPrayer?.tema || "Motivo de Oração"}
+              {currentPrayer?.categoria || "Motivo de Oração"}
             </span>
             
             <h2 className="serif-font text-xl font-bold text-[#2D1B4D] mb-4 leading-tight">
-              {currentPrayer?.texto || currentPrayer?.description || "Carregando pedido..."}
+              {currentPrayer?.texto || "Carregando pedido..."}
             </h2>
 
             {/* BOX BÍBLICO INTERATIVO (EXPANSÍVEL) */}
-            {(currentPrayer?.versiculo || currentPrayer?.reference) && (
+            {currentPrayer?.versiculo && (
               <details className="group mb-6 bg-brand-lavender/5 rounded-2xl border border-brand-lavender/20 transition-all">
                 <summary className="list-none p-4 cursor-pointer flex items-center justify-between outline-none">
                   <div className="flex items-center gap-2">
                     <i className="fa-solid fa-book-open text-brand-rose text-[10px]"></i>
                     <span className="text-brand-rose font-black text-[10px] uppercase tracking-widest">
-                      {currentPrayer?.versiculo || currentPrayer?.reference}
+                      {currentPrayer.versiculo}
                     </span>
                   </div>
                   <i className="fa-solid fa-chevron-down text-[10px] text-brand-rose group-open:rotate-180 transition-transform"></i>
                 </summary>
                 
                 <div className="px-4 pb-4 animate-fadeIn">
-                  <p className="text-[#2D1B4D] text-[11px] leading-relaxed italic opacity-80 border-t border-brand-lavender/20 pt-3">
-                    "{currentPrayer?.texto_biblico || "Medite nesta palavra enquanto intercede."}"
+                  <p className="text-[#2D1B4D] text-[12px] leading-relaxed italic opacity-80 border-t border-brand-lavender/20 pt-3">
+                    "Medite neste versículo enquanto intercede pelo alvo de hoje."
                   </p>
-                  <span className="text-[9px] font-bold text-gray-400 mt-2 block text-right">Versão NVI</span>
+                  <span className="text-[9px] font-bold text-gray-400 mt-2 block text-right">Referência: {currentPrayer.versiculo}</span>
                 </div>
               </details>
             )}
