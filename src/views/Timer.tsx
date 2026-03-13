@@ -61,12 +61,12 @@ const TimerView: React.FC<TimerProps> = ({
     try {
       await addDoc(collection(db, "diario_clamor"), {
         userId: user.uid,
-        alvo: `Pedido #${currentPrayerIndex + 1}`,
+        alvo: currentPrayer?.tema || `Pedido #${currentPrayerIndex + 1}`,
         relato: prayerNote,
         data: serverTimestamp()
       });
 
-      setSessionLogs(prev => [...prev, `Pedido ${currentPrayerIndex + 1}: ${prayerNote}`]);
+      setSessionLogs(prev => [...prev, `${currentPrayer?.tema || 'Oração'}: ${prayerNote}`]);
 
       const nextIndex = currentPrayerIndex + 1;
       const userRef = doc(db, "usuarios", user.uid);
@@ -91,7 +91,7 @@ const TimerView: React.FC<TimerProps> = ({
     <div className="flex flex-col items-center gap-6 animate-fadeIn pb-20">
       {/* Indicador do Dia */}
       <div className="bg-brand-rose/10 text-brand-rose px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-        Intercessão Diária • {currentPrayerIndex + 1} de {prayers.length}
+        Intercessão Diária • Dia {currentPrayer?.dia || currentPrayerIndex + 1}
       </div>
 
       {/* Timer Central */}
@@ -108,35 +108,34 @@ const TimerView: React.FC<TimerProps> = ({
       <div className="w-full bg-white rounded-[2.5rem] p-7 shadow-2xl border border-purple-50">
         {!showSuccess ? (
           <>
-            <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-brand-rose block mb-1">
               {currentPrayer?.tema || "Pedido de Oração"}
-            </h2>
+            </span>
             
-            {/* Texto do Pedido (Completo conforme planilha) */}
-            <p className="text-gray-600 text-sm leading-relaxed mb-6 italic">
-              "{currentPrayer?.texto || currentPrayer?.description}"
-            </p>
+            <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-4 leading-tight">
+              {currentPrayer?.texto}
+            </h2>
 
-            {/* BOX BÍBLICO (Com Referência e Texto do Versículo) */}
-            {(currentPrayer?.versiculo || currentPrayer?.reference) && (
+            {/* BOX BÍBLICO (NVI) */}
+            {currentPrayer?.texto_biblico && (
               <div className="bg-brand-lavender/10 p-5 rounded-2xl mb-6 border-l-4 border-brand-rose">
-                <div className="flex items-center gap-2 mb-2">
-                  <i className="fa-solid fa-book-open text-brand-rose text-[10px]"></i>
+                <p className="text-[#2D1B4D] text-xs leading-relaxed font-medium italic mb-2">
+                  "{currentPrayer.texto_biblico}"
+                </p>
+                <div className="flex items-center gap-2">
+                  <i className="fa-solid fa-book-open text-brand-rose text-[9px]"></i>
                   <span className="text-brand-rose font-black text-[10px] uppercase tracking-widest">
-                    {currentPrayer?.versiculo || currentPrayer?.reference}
+                    {currentPrayer.versiculo} (NVI)
                   </span>
                 </div>
-                <p className="text-[#2D1B4D] text-xs leading-relaxed font-medium">
-                  {currentPrayer?.texto_biblico || "Medite nesta palavra enquanto intercede."}
-                </p>
               </div>
             )}
             
             <textarea
               value={prayerNote}
               onChange={(e) => setPrayerNote(e.target.value)}
-              placeholder="O que o Espírito Santo ministrou ao seu coração?"
-              className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-4 min-h-[120px] resize-none focus:ring-1 focus:ring-brand-rose/20 transition-all"
+              placeholder="Escreva aqui e matenha o seu diário de oração"
+              className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-4 min-h-[120px] resize-none focus:ring-1 focus:ring-brand-rose/20 transition-all placeholder:text-gray-400"
             />
             
             <button
