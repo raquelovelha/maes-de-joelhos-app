@@ -40,7 +40,7 @@ const TimerView: React.FC<TimerProps> = ({
     return () => clearInterval(interval);
   }, [isTimerActive, timeLeft]);
 
-  // Pega o pedido atual da lista
+  // Pega o pedido atual com proteção contra lista vazia
   const currentPrayer = prayers && prayers.length > 0 ? prayers[currentPrayerIndex % prayers.length] : null;
 
   const handleNextPrayer = async () => {
@@ -112,24 +112,30 @@ const TimerView: React.FC<TimerProps> = ({
               {currentPrayer?.tema || "Motivo de Oração"}
             </span>
             
-            <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-4 leading-tight">
-              {/* Fallback: tenta ler 'texto', se não houver, tenta 'description' */}
+            <h2 className="serif-font text-xl font-bold text-[#2D1B4D] mb-4 leading-tight">
               {currentPrayer?.texto || currentPrayer?.description || "Carregando pedido..."}
             </h2>
 
-            {/* BOX BÍBLICO (NVI) */}
-            {(currentPrayer?.texto_biblico || currentPrayer?.versiculo || currentPrayer?.reference) && (
-              <div className="bg-brand-lavender/10 p-5 rounded-2xl mb-6 border-l-4 border-brand-rose">
-                <p className="text-[#2D1B4D] text-xs leading-relaxed font-medium italic mb-2">
-                  "{currentPrayer?.texto_biblico || "Medite nesta palavra enquanto intercede."}"
-                </p>
-                <div className="flex items-center gap-2">
-                  <i className="fa-solid fa-book-open text-brand-rose text-[9px]"></i>
-                  <span className="text-brand-rose font-black text-[10px] uppercase tracking-widest">
-                    {currentPrayer?.versiculo || currentPrayer?.reference || "Palavra do Senhor"} (NVI)
-                  </span>
+            {/* BOX BÍBLICO INTERATIVO (EXPANSÍVEL) */}
+            {(currentPrayer?.versiculo || currentPrayer?.reference) && (
+              <details className="group mb-6 bg-brand-lavender/5 rounded-2xl border border-brand-lavender/20 transition-all">
+                <summary className="list-none p-4 cursor-pointer flex items-center justify-between outline-none">
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-book-open text-brand-rose text-[10px]"></i>
+                    <span className="text-brand-rose font-black text-[10px] uppercase tracking-widest">
+                      {currentPrayer?.versiculo || currentPrayer?.reference}
+                    </span>
+                  </div>
+                  <i className="fa-solid fa-chevron-down text-[10px] text-brand-rose group-open:rotate-180 transition-transform"></i>
+                </summary>
+                
+                <div className="px-4 pb-4 animate-fadeIn">
+                  <p className="text-[#2D1B4D] text-[11px] leading-relaxed italic opacity-80 border-t border-brand-lavender/20 pt-3">
+                    "{currentPrayer?.texto_biblico || "Medite nesta palavra enquanto intercede."}"
+                  </p>
+                  <span className="text-[9px] font-bold text-gray-400 mt-2 block text-right">Versão NVI</span>
                 </div>
-              </div>
+              </details>
             )}
             
             <textarea
