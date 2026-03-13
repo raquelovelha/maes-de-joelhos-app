@@ -18,7 +18,6 @@ interface TimerProps {
 const TimerView: React.FC<TimerProps> = ({ 
   user, userProfile, prayers, timeLeft, setTimeLeft, isTimerActive, setIsTimerActive, onFinish, onViewDiary 
 }) => {
-  // Inicia com o índice salvo no perfil
   const [currentPrayerIndex, setCurrentPrayerIndex] = useState(userProfile?.lastPrayerIndex || 0);
   const [prayerNote, setPrayerNote] = useState("");
   const [sessionLogs, setSessionLogs] = useState<string[]>([]);
@@ -41,17 +40,15 @@ const TimerView: React.FC<TimerProps> = ({
     return () => clearInterval(interval);
   }, [isTimerActive, timeLeft]);
 
+  // Pega o pedido atual da lista
   const currentPrayer = prayers[currentPrayerIndex % prayers.length];
 
   const handleNextPrayer = async () => {
     const nextIndex = currentPrayerIndex + 1;
-    
-    // Salva o progresso no banco mesmo se ela apenas pular
     if (user) {
       const userRef = doc(db, "usuarios", user.uid);
       await updateDoc(userRef, { lastPrayerIndex: nextIndex });
     }
-    
     setCurrentPrayerIndex(nextIndex);
     setPrayerNote("");
     setShowSuccess(false);
@@ -62,24 +59,21 @@ const TimerView: React.FC<TimerProps> = ({
     setIsSaving(true);
     
     try {
-      // 1. Salva no diário
       await addDoc(collection(db, "diario_clamor"), {
         userId: user.uid,
-        alvo: currentPrayer.title,
+        alvo: `Pedido #${currentPrayerIndex + 1}`,
         relato: prayerNote,
         data: serverTimestamp()
       });
 
-      setSessionLogs(prev => [...prev, `${currentPrayer.title}: ${prayerNote}`]);
+      setSessionLogs(prev => [...prev, `Pedido ${currentPrayerIndex + 1}: ${prayerNote}`]);
 
-      // 2. ATUALIZAÇÃO IMEDIATA DO ÍNDICE: Se orou o 2, salva que o próximo é o 3
       const nextIndex = currentPrayerIndex + 1;
       const userRef = doc(db, "usuarios", user.uid);
       await updateDoc(userRef, { lastPrayerIndex: nextIndex });
 
       setShowSuccess(true);
       
-      // 3. Transição visual
       setTimeout(() => {
         setCurrentPrayerIndex(nextIndex);
         setPrayerNote("");
@@ -95,12 +89,12 @@ const TimerView: React.FC<TimerProps> = ({
 
   return (
     <div className="flex flex-col items-center gap-6 animate-fadeIn pb-20">
-      {/* Indicador do Dia/Pedido */}
+      {/* Indicador do Dia */}
       <div className="bg-brand-rose/10 text-brand-rose px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-        Pedido de Oração #{currentPrayerIndex + 1}
+        Intercessão Diária • {currentPrayerIndex + 1} de {prayers.length}
       </div>
 
-      {/* Timer */}
+      {/* Timer Central */}
       <div className="w-44 h-44 rounded-full border-[6px] border-brand-rose/10 flex items-center justify-center bg-white shadow-inner relative">
         <div className="text-center">
           <span className="text-5xl font-black text-[#2D1B4D] block tabular-nums">{formatTime(timeLeft)}</span>
@@ -110,18 +104,39 @@ const TimerView: React.FC<TimerProps> = ({
         </div>
       </div>
 
-      {/* Card de Pedido */}
+      {/* Card de Pedido de Oração */}
       <div className="w-full bg-white rounded-[2.5rem] p-7 shadow-2xl border border-purple-50">
         {!showSuccess ? (
           <>
-            <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-2">{currentPrayer?.title}</h2>
-            <p className="text-gray-500 text-sm mb-6 italic">"{currentPrayer?.description}"</p>
+            <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-2">
+              {currentPrayer?.tema || "Pedido de Oração"}
+            </h2>
+            
+            {/* Texto do Pedido (Completo conforme planilha) */}
+            <p className="text-gray-600 text-sm leading-relaxed mb-6 italic">
+              "{currentPrayer?.texto || currentPrayer?.description}"
+            </p>
+
+            {/* BOX BÍBLICO (Com Referência e Texto do Versículo) */}
+            {(currentPrayer?.versiculo || currentPrayer?.reference) && (
+              <div className="bg-brand-lavender/10 p-5 rounded-2xl mb-6 border-l-4 border-brand-rose">
+                <div className="flex items-center gap-2 mb-2">
+                  <i className="fa-solid fa-book-open text-brand-rose text-[10px]"></i>
+                  <span className="text-brand-rose font-black text-[10px] uppercase tracking-widest">
+                    {currentPrayer?.versiculo || currentPrayer?.reference}
+                  </span>
+                </div>
+                <p className="text-[#2D1B4D] text-xs leading-relaxed font-medium">
+                  {currentPrayer?.texto_biblico || "Medite nesta palavra enquanto intercede."}
+                </p>
+              </div>
+            )}
             
             <textarea
               value={prayerNote}
               onChange={(e) => setPrayerNote(e.target.value)}
-              placeholder="O que o Espírito Santo ministrou sobre este pedido?"
-              className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-4 min-h-[120px] resize-none focus:ring-1 focus:ring-brand-rose/20"
+              placeholder="O que o Espírito Santo ministrou ao seu coração?"
+              className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-4 min-h-[120px] resize-none focus:ring-1 focus:ring-brand-rose/20 transition-all"
             />
             
             <button
@@ -144,12 +159,12 @@ const TimerView: React.FC<TimerProps> = ({
         ) : (
           <div className="py-12 text-center text-green-500 animate-pulse">
             <i className="fa-solid fa-circle-check text-4xl mb-3"></i>
-            <p className="font-bold uppercase text-xs tracking-widest">Registrado com sucesso!</p>
+            <p className="font-bold uppercase text-xs tracking-widest">Oração Registrada!</p>
           </div>
         )}
       </div>
 
-      {/* Controles Inferiores */}
+      {/* Controles do Player */}
       <div className="flex flex-col items-center gap-6">
         <div className="flex items-center gap-6">
           <button

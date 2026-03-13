@@ -1,6 +1,7 @@
 import React from 'react';
 import { UserProfile } from '../types';
 import { INSTITUTIONAL } from '../constants';
+import { executarCarga } from '../utils/CargaDados'; // Certifique-se de que o caminho está correto
 
 interface HomeProps {
   profile: UserProfile;
@@ -17,6 +18,16 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
 
   return (
     <div className="flex flex-col gap-6 animate-fadeIn pb-12">
+      
+      {/* BOTÃO TEMPORÁRIO DE ADMIN - APARECE NO TOPO PARA VOCÊ CLICAR */}
+      <button 
+        onClick={() => executarCarga()} 
+        className="bg-red-600 text-white p-3 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
+      >
+        <i className="fa-solid fa-database mr-2"></i>
+        ADMIN: Carregar 105 Pedidos (Firebase)
+      </button>
+
       {/* Header de Boas-vindas */}
       <section>
         <h1 className="text-3xl serif-font font-bold text-brand-dark">
@@ -83,25 +94,12 @@ const HomeView: React.FC<HomeProps> = ({ profile, onNavigate }) => {
         </button>
       </div>
 
-  {/* RODAPÉ INSTITUCIONAL */}
+      {/* RODAPÉ INSTITUCIONAL */}
       <footer className="mt-12 pt-10 border-t border-brand-lavender/50 flex flex-col items-center gap-8 pb-12">
         <div className="flex items-center justify-center gap-8 opacity-90">
-          {/* Logo Desperta Débora */}
-          <img 
-            src={INSTITUTIONAL.logoUrl} 
-            alt="Desperta Débora" 
-            className="h-10 w-auto object-contain" 
-          />
-          
-          {/* Divisor sutil */}
+          <img src={INSTITUTIONAL.logoUrl} alt="Desperta Débora" className="h-10 w-auto object-contain" />
           <div className="h-8 w-[1px] bg-gray-200"></div>
-
-          {/* Logo Geração Compromisso (Agora limpa no fundo claro) */}
-          <img 
-            src={INSTITUTIONAL.gcLogoUrl} 
-            alt="Geração Compromisso" 
-            className="h-10 w-auto object-contain" 
-          />
+          <img src={INSTITUTIONAL.gcLogoUrl} alt="Geração Compromisso" className="h-10 w-auto object-contain" />
         </div>
         
         <div className="text-center px-6">
