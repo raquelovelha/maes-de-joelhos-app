@@ -41,7 +41,7 @@ const TimerView: React.FC<TimerProps> = ({
   }, [isTimerActive, timeLeft]);
 
   // Pega o pedido atual da lista
-  const currentPrayer = prayers[currentPrayerIndex % prayers.length];
+  const currentPrayer = prayers && prayers.length > 0 ? prayers[currentPrayerIndex % prayers.length] : null;
 
   const handleNextPrayer = async () => {
     const nextIndex = currentPrayerIndex + 1;
@@ -109,23 +109,24 @@ const TimerView: React.FC<TimerProps> = ({
         {!showSuccess ? (
           <>
             <span className="text-[10px] font-black uppercase tracking-widest text-brand-rose block mb-1">
-              {currentPrayer?.tema || "Pedido de Oração"}
+              {currentPrayer?.tema || "Motivo de Oração"}
             </span>
             
             <h2 className="serif-font text-2xl font-bold text-[#2D1B4D] mb-4 leading-tight">
-              {currentPrayer?.texto}
+              {/* Fallback: tenta ler 'texto', se não houver, tenta 'description' */}
+              {currentPrayer?.texto || currentPrayer?.description || "Carregando pedido..."}
             </h2>
 
             {/* BOX BÍBLICO (NVI) */}
-            {currentPrayer?.texto_biblico && (
+            {(currentPrayer?.texto_biblico || currentPrayer?.versiculo || currentPrayer?.reference) && (
               <div className="bg-brand-lavender/10 p-5 rounded-2xl mb-6 border-l-4 border-brand-rose">
                 <p className="text-[#2D1B4D] text-xs leading-relaxed font-medium italic mb-2">
-                  "{currentPrayer.texto_biblico}"
+                  "{currentPrayer?.texto_biblico || "Medite nesta palavra enquanto intercede."}"
                 </p>
                 <div className="flex items-center gap-2">
                   <i className="fa-solid fa-book-open text-brand-rose text-[9px]"></i>
                   <span className="text-brand-rose font-black text-[10px] uppercase tracking-widest">
-                    {currentPrayer.versiculo} (NVI)
+                    {currentPrayer?.versiculo || currentPrayer?.reference || "Palavra do Senhor"} (NVI)
                   </span>
                 </div>
               </div>
