@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { db } from '../firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, getDocs, query, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, doc, setDoc, getDoc, orderBy } from 'firebase/firestore';
 
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<any[]>([]);
@@ -15,8 +15,8 @@ export const usePrayers = () => {
       return;
     }
     try {
-      // Tentamos buscar na coleção 'prayers' que é onde os dados costumam estar
-      const q = query(collection(db, "prayers")); 
+      // APONTANDO PARA A PASTA CORRETA: sugestoes_oracao
+      const q = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc")); 
       const snap = await getDocs(q);
       
       const userDocSnap = await getDoc(doc(db, "user_progress", userId));
@@ -24,15 +24,14 @@ export const usePrayers = () => {
 
       const combinedData = snap.docs.map(docSnap => {
         const data = docSnap.data();
-        const id = docSnap.id;
+        const id = data.dia || docSnap.id;
         const progress = userProgress[id] || {};
 
         return {
           id: id,
-          // Voltando para o mapeamento simples que funcionava antes
-          category: data.tema || data.categoria || "GERAL",
-          description: data.pedido || data.texto || "Oração disponível",
-          verse: data.referencia || data.versiculo || "", // Se não tiver, fica vazio
+          category: data.categoria || "GERAL",
+          description: data.texto || "Oração disponível",
+          verse: data.versiculo || "", 
           dia: data.dia || 0,
           isPrayed: !!progress.isPrayed,
           isFavorite: !!progress.isFavorite
@@ -49,7 +48,7 @@ export const usePrayers = () => {
 
   useEffect(() => { loadData(); }, [userId]);
 
-  const toggleFavorite = (id: any) => { /* função mantida */ };
+  const toggleFavorite = (id: any) => { /* mantido */ };
 
-  return { prayers, loading, toggleFavorite };
+  return { prayers, loading, toggleFavorite, loadData };
 };
