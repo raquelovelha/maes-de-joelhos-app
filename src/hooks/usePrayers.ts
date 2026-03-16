@@ -1,21 +1,23 @@
 import { useState, useCallback, useEffect } from 'react';
 import { db } from '../firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, getDocs, query, doc, setDoc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, doc, getDoc, orderBy, onSnapshot } from 'firebase/firestore';
 
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<any[]>([]);
+  const [filhos, setFilhos] = useState<any[]>([]); // <--- Estado para os pedidos dos filhos
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
     }
+
     try {
-      // APONTANDO PARA A PASTA CORRETA: sugestoes_oracao
+      // 1. Busca as orações gerais (Sugestões)
       const q = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc")); 
       const snap = await getDocs(q);
       
@@ -37,18 +39,33 @@ export const usePrayers = () => {
           isFavorite: !!progress.isFavorite
         };
       });
-
       setPrayers(combinedData);
+
+      // 2. Busca os dados dos filhos do usuário
+      const userRef = doc(db, "usuarios", userId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        // Assume que 'filhos' é uma lista no seu Firebase: [{nome: 'Lara', pedido: '...'}]
+        setFilhos(userData.filhos || []);
+      }
+
     } catch (e) {
-      console.error("Erro ao carregar:", e);
+      console.error("Erro ao carregar dados:", e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => { loadData(); }, [userId]);
+  useEffect(() => { 
+    loadData(); 
+  }, [loadData]);
 
-  const toggleFavorite = (id: any) => { /* mantido */ };
+  // Função simples para favoritar (para não quebrar o componente)
+  const toggleFavorite = useCallback((id: any) => {
+    setPrayers(prev => prev.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p));
+  }, []);
 
-  return { prayers, loading, toggleFavorite, loadData };
+  return { prayers, filhos, loading, toggleFavorite, loadData };
 };

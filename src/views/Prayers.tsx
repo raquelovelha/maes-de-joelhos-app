@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 
-const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) => {
+// Recebemos 'filhos' que agora vem do seu hook usePrayers
+const Prayers: React.FC<any> = ({ prayers = [], filhos = [], toggleFavorite, onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showFilhosModal, setShowFilhosModal] = useState(false);
 
-  // Categorias mapeadas para bater com o campo 'categoria' do seu Firebase
   const categories = [
     { id: 'CARATER', label: 'Caráter', icon: 'fa-gem', color: '#64748B', match: 'Caráter, Valores e Emoções' },
     { id: 'FUTURO', label: 'Futuro', icon: 'fa-graduation-cap', color: '#8B5CF6', match: 'Educação, Futuro e Propósito' },
@@ -31,14 +32,21 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
 
   return (
     <div className="flex flex-col gap-6 pb-24 pt-4 animate-fadeIn px-1">
-      {/* HEADER COM ACESSO AO DIÁRIO */}
-      <div className="flex justify-between items-center px-2">
-        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Pastas de Clamor</h3>
+      
+      {/* HEADER COM DOIS BOTÕES SEPARADOS */}
+      <div className="flex justify-between items-center px-2 gap-3">
         <button 
           onClick={() => onNavigate('memorial')}
-          className="text-[10px] font-black text-brand-rose uppercase flex items-center gap-2 bg-brand-rose/5 px-3 py-2 rounded-full"
+          className="flex-1 text-[10px] font-black text-brand-rose uppercase flex items-center justify-center gap-2 bg-brand-rose/5 py-3 rounded-2xl border border-brand-rose/10 shadow-sm"
         >
           <i className="fa-solid fa-book-open"></i> Meu Diário
+        </button>
+
+        <button 
+          onClick={() => setShowFilhosModal(true)}
+          className="flex-1 text-[10px] font-black text-blue-600 uppercase flex items-center justify-center gap-2 bg-blue-50 py-3 rounded-2xl border border-blue-100 shadow-sm"
+        >
+          <i className="fa-solid fa-children"></i> Pedidos dos Filhos
         </button>
       </div>
 
@@ -48,40 +56,67 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
         <input 
           type="text" 
           placeholder="Buscar nos temas..."
-          className="w-full bg-white border-2 border-gray-50 rounded-2xl py-4 pl-12 shadow-sm outline-none text-sm"
+          className="w-full bg-white border-2 border-gray-50 rounded-2xl py-4 pl-12 shadow-sm outline-none text-sm focus:border-brand-rose/20 transition-all"
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
       {/* GRID DE PASTAS */}
-      <div className="grid grid-cols-3 gap-2">
-        {categories.map(cat => (
-          <button 
-            key={cat.id} 
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`flex flex-col items-center justify-center p-3 rounded-[2rem] border-2 transition-all ${
-              selectedCategory === cat.id ? 'bg-white shadow-md border-brand-rose' : 'bg-transparent border-transparent'
-            }`}
-          >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base mb-2 ${selectedCategory === cat.id ? 'bg-brand-rose text-white' : 'bg-gray-100 text-gray-400'}`}>
-              <i className={`fa-solid ${cat.icon}`}></i>
+      <div className="flex flex-col gap-4">
+        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Pastas de Clamor</h3>
+        <div className="grid grid-cols-3 gap-2">
+          {categories.map(cat => (
+            <button 
+              key={cat.id} 
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`flex flex-col items-center justify-center p-3 rounded-[2rem] border-2 transition-all active:scale-95 ${
+                selectedCategory === cat.id ? 'bg-white shadow-md border-brand-rose' : 'bg-transparent border-transparent'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-base mb-2 ${selectedCategory === cat.id ? 'bg-brand-rose text-white' : 'bg-gray-100 text-gray-400'}`}>
+                <i className={`fa-solid ${cat.icon}`}></i>
+              </div>
+              <span className="text-[8px] font-black uppercase text-center leading-tight text-gray-500">{cat.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* MODAL DE PEDIDOS DOS FILHOS */}
+      {showFilhosModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] flex items-end">
+          <div className="bg-white w-full max-h-[85vh] rounded-t-[3rem] p-8 overflow-y-auto animate-slideUp shadow-2xl">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="serif-font text-2xl font-bold text-[#2D1B4D]">Pedidos dos Filhos</h2>
+                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Intercessão de Mãe</p>
+              </div>
+              <button onClick={() => setShowFilhosModal(false)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
             </div>
-            <span className="text-[8px] font-black uppercase text-center leading-tight text-gray-500">{cat.label}</span>
-          </button>
-        ))}
-      </div>
 
-      {/* LISTA DE PEDIDOS DOS FILHOS (GERAL) */}
-      <div className="mt-4 px-2">
-         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Pedidos de Oração dos Filhos</h3>
-         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 italic text-sm text-gray-500 text-center">
-            <i className="fa-solid fa-children text-2xl mb-2 block opacity-20"></i>
-            Em breve: Lista unificada de todos os pedidos dos seus filhos aqui.
-         </div>
-      </div>
+            <div className="flex flex-col gap-4">
+              {filhos.length > 0 ? filhos.map((filho: any, idx: number) => (
+                <div key={idx} className="bg-blue-50/50 rounded-[2rem] p-6 border border-blue-100 relative overflow-hidden">
+                  <h4 className="font-black text-blue-600 text-[10px] uppercase mb-2 tracking-widest">{filho.nome || filho.name}</h4>
+                  <p className="text-sm text-[#2D1B4D] leading-relaxed italic">
+                    {filho.pedido || filho.prayer || "Nenhum pedido específico cadastrado para este filho."}
+                  </p>
+                </div>
+              )) : (
+                <div className="text-center py-10">
+                  <i className="fa-solid fa-heart-pulse text-3xl text-gray-100 mb-3 block"></i>
+                  <p className="text-gray-400 text-xs font-bold uppercase">Nenhum pedido encontrado.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* MODAL/LISTA AO SELECIONAR CATEGORIA */}
+      {/* MODAL DE CATEGORIAS (MOTIVOS DE ORAÇÃO) */}
       {selectedCategory && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-end">
           <div className="bg-white w-full max-h-[80vh] rounded-t-[3rem] p-6 overflow-y-auto animate-slideUp">
