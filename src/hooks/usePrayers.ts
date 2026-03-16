@@ -5,7 +5,7 @@ import { collection, getDocs, query, doc, getDoc, orderBy, onSnapshot } from 'fi
 
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<any[]>([]);
-  const [filhos, setFilhos] = useState<any[]>([]); // <--- Estado para os pedidos dos filhos
+  const [filhos, setFilhos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
@@ -17,7 +17,7 @@ export const usePrayers = () => {
     }
 
     try {
-      // 1. Busca as orações gerais (Sugestões)
+      // 1. Busca as orações gerais
       const q = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc")); 
       const snap = await getDocs(q);
       
@@ -47,7 +47,6 @@ export const usePrayers = () => {
       
       if (userSnap.exists()) {
         const userData = userSnap.data();
-        // Assume que 'filhos' é uma lista no seu Firebase: [{nome: 'Lara', pedido: '...'}]
         setFilhos(userData.filhos || []);
       }
 
@@ -58,11 +57,8 @@ export const usePrayers = () => {
     }
   }, [userId]);
 
-  useEffect(() => { 
-    loadData(); 
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
-  // Função simples para favoritar (para não quebrar o componente)
   const toggleFavorite = useCallback((id: any) => {
     setPrayers(prev => prev.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p));
   }, []);

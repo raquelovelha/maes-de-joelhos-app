@@ -1,88 +1,64 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
-interface MemorialProps {
-  user: any;
-  onBack: () => void;
-}
-
-const MemorialView: React.FC<MemorialProps> = ({ user, onBack }) => {
-  const [logs, setLogs] = useState<any[]>([]);
+const MemorialView = ({ user }: any) => {
+  const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-
-    // AQUI ESTÁ O SEGREDO: Apontando para a coleção nova 'diario_clamor'
     const q = query(
-      collection(db, "diario_clamor"),
+      collection(db, "diario_clamor"), 
       where("userId", "==", user.uid),
       orderBy("data", "desc")
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({
+    const unsubscribe = onSnapshot(q, (snap) => {
+      const data = snap.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        // Normaliza os campos para o código
+        alvo: doc.data().alvo || "Oração",
+        relato: doc.data().relato || "Sem descrição",
+        data: doc.data().data?.toDate() || new Date()
       }));
-      setLogs(docs);
-      setLoading(false);
-    }, (error) => {
-      console.error("Erro ao buscar diário:", error);
+      setEntries(data);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, [user]);
 
+  if (loading) return <div className="p-10 text-center text-gray-400">Carregando memórias...</div>;
+
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn pb-24">
-      <header className="flex items-center gap-4">
-        <button 
-          onClick={onBack} 
-          className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-brand-rose active:scale-90 transition-all"
-        >
-          <i className="fa-solid fa-arrow-left"></i>
-        </button>
-        <h2 className="serif-font text-2xl font-bold text-[#2D1B4D]">Meu Diário de Clamor</h2>
+    <div className="flex flex-col gap-6 pb-24 animate-fadeIn">
+      <header className="px-2">
+        <h2 className="serif-font text-3xl font-bold text-[#2D1B4D]">Memorial</h2>
+        <p className="text-[10px] font-black text-[#FF4DAD] uppercase tracking-[0.2em]">Suas experiências com Deus</p>
       </header>
 
-      {loading ? (
-        <div className="text-center py-20">
-          <div className="animate-spin inline-block w-6 h-6 border-[3px] border-current border-t-transparent text-brand-rose rounded-full mb-2"></div>
-          <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Buscando memórias...</p>
-        </div>
-      ) : logs.length === 0 ? (
-        <div className="bg-white rounded-[2.5rem] p-12 text-center border border-dashed border-brand-lavender shadow-inner">
-          <i className="fa-solid fa-pen-fancy text-4xl text-brand-lavender/40 mb-4"></i>
-          <p className="text-gray-500 text-sm italic">"Suas vitórias e intercessões aparecerão aqui para que você nunca esqueça o que o Senhor falou ao seu coração."</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-5">
-          {logs.map((log) => (
-            <div key={log.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-purple-50 relative overflow-hidden group">
-              {/* Detalhe lateral colorido */}
-              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-brand-rose opacity-20"></div>
-              
-              <div className="flex justify-between items-center mb-4">
-                <span className="bg-brand-rose/10 text-brand-rose text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                  {log.alvo}
-                </span>
-                <span className="text-[10px] font-bold text-gray-300">
-                  {log.data?.toDate() ? log.data.toDate().toLocaleDateString('pt-BR') : 'Recentemente'}
-                </span>
-              </div>
-              
-              <div className="bg-gray-50 rounded-2xl p-4">
-                <p className="text-[#2D1B4D] text-sm leading-relaxed italic opacity-80">
-                  "{log.relato}"
-                </p>
-              </div>
+      <div className="flex flex-col gap-4">
+        {entries.length > 0 ? entries.map((entry) => (
+          <div key={entry.id} className="bg-white rounded-[2.5rem] p-7 shadow-sm border border-gray-50">
+            <div className="flex justify-between items-start mb-4">
+              <span className="bg-[#FF4DAD]/10 text-[#FF4DAD] text-[9px] font-black px-3 py-1 rounded-full uppercase">
+                {entry.alvo}
+              </span>
+              <span className="text-[9px] text-gray-300 font-bold">
+                {entry.data.toLocaleDateString('pt-BR')}
+              </span>
             </div>
-          ))}
-        </div>
-      )}
+            <p className="text-sm text-[#2D1B4D] leading-relaxed italic">"{entry.relato}"</p>
+          </div>
+        )) : (
+          <div className="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
+            <i className="fa-solid fa-pen-fancy text-3xl text-gray-100 mb-4 block"></i>
+            <p className="text-gray-400 text-xs font-bold uppercase">Nenhum relato ainda.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
