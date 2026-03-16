@@ -6,7 +6,7 @@ import { PrayerRequest } from '../types';
 
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<PrayerRequest[]>([]);
-  const [loading, setLoading] = useState(true); // <--- ADICIONE ISSO
+  const [loading, setLoading] = useState(true);
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
@@ -16,7 +16,9 @@ export const usePrayers = () => {
       return;
     }
     try {
-      const qSugestoes = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc"));
+      // 1. CORREÇÃO: Coleção correta é 'prayers' (conforme sua planilha importada)
+      // Se no seu Firebase a coleção tiver outro nome, mude "prayers" abaixo.
+      const qSugestoes = query(collection(db, "prayers")); 
       const snapSugestoes = await getDocs(qSugestoes);
       
       const userDocSnap = await getDoc(doc(db, "user_progress", userId));
@@ -24,29 +26,39 @@ export const usePrayers = () => {
 
       const combinedData = snapSugestoes.docs.map(docSnap => {
         const data = docSnap.data();
-        const id = data.dia || docSnap.id;
+        // 2. CORREÇÃO: Mapeando os nomes exatos da sua planilha
+        const id = docSnap.id;
         const progress = userProgress[id] || {};
 
         return {
           id: id,
-          category: data.categoria || "GERAL",
-          title: data.titulo || `Oração Dia ${data.dia}`,
-          description: data.texto || "",
-          verse: data.versiculo || "",
+          // Pega 'tema' ou 'Tema' ou 'categoria' (flexibilidade para acentos)
+          category: data.tema || data.Tema || data.categoria || "GERAL",
+          // Pega 'pedido' ou 'texto' ou 'Pedido Original'
+          description: data.pedido || data.texto || data["Pedido Original"] || "",
+          // Pega 'referencia' ou 'versiculo'
+          verse: data.referencia || data.versiculo || data["Referência Bíblica"] || "",
+          dia: data.dia || data.ordem || 0,
           isPrayed: !!progress.isPrayed,
           isFavorite: !!progress.isFavorite,
           personalNotes: progress.personalNotes || ''
-        } as PrayerRequest;
+        } as unknown as PrayerRequest;
       });
-      setPrayers(combinedData);
+
+      // Ordena pelo dia (para ficar na ordem da planilha)
+      combinedData.sort((a: any, b: any) => (a.dia || 0) - (b.dia || 0));
+      
+      setPrayers(combinedData as any);
     } catch (e) {
-      console.error(e);
+      console.error("Erro ao carregar orações:", e);
     } finally {
-      setLoading(false); // <--- GARANTE QUE O LOADING ACABA
+      setLoading(false);
     }
   };
 
-  useEffect(() => { loadData(); }, [userId]);
+  useEffect(() => { 
+    loadData(); 
+  }, [userId]);
 
   const togglePrayed = useCallback(async (id: any) => {
     if (!userId) return;
@@ -87,5 +99,5 @@ export const usePrayers = () => {
     });
   }, [userId]);
 
-  return { prayers, toggleFavorite, togglePrayed, updateNote, loading }; // <--- RETORNE O LOADING AQUI
+  return { prayers, toggleFavorite, togglePrayed, updateNote, loading };
 };

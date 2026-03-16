@@ -4,7 +4,6 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Lista de categorias com o "match" EXATO do texto da sua planilha
   const categories = [
     { id: 'CARATER', label: 'Caráter', icon: 'fa-gem', color: '#64748B', match: 'Caráter, Valores e Emoções' },
     { id: 'FUTURO', label: 'Futuro', icon: 'fa-graduation-cap', color: '#8B5CF6', match: 'Educação, Futuro e Propósito' },
@@ -19,38 +18,31 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
 
   const filteredPrayers = useMemo(() => {
     if (!selectedCategory) return [];
-    
     const config = categories.find(c => c.id === selectedCategory);
-    if (!config) return [];
-
+    
     return prayers.filter((p: any) => {
-      // Normalização rigorosa para garantir que o clique funcione
-      const pCat = String(p.tema || p.categoria || '').trim().toLowerCase();
-      const target = String(config.match).trim().toLowerCase();
+      // Normalização rigorosa: remove espaços e ignora acentos/caixa
+      const pCat = String(p.tema || '').trim().toLowerCase();
+      const target = String(config?.match || '').trim().toLowerCase();
       
-      const content = String((p.texto || p.pedido || '') + (p.versiculo || p.referencia || '')).toLowerCase();
-      const matchesSearch = content.includes(searchTerm.toLowerCase());
-
-      // Retorna verdadeiro apenas se a categoria do banco for idêntica ao tema da planilha
-      return pCat === target && matchesSearch;
+      const content = (p.texto + p.versiculo).toLowerCase();
+      return pCat === target && content.includes(searchTerm.toLowerCase());
     }).sort((a, b) => (Number(a.dia) || 0) - (Number(b.dia) || 0));
   }, [prayers, searchTerm, selectedCategory]);
 
   return (
     <div className="flex flex-col gap-6 pb-24 pt-4 animate-fadeIn px-1">
-      {/* BUSCA */}
       <div className="relative mx-1">
         <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-300"></i>
         <input 
           type="text" 
           placeholder="Buscar nos pedidos..."
-          className="w-full bg-white border-2 border-gray-50 rounded-2xl py-4 pl-12 shadow-sm outline-none focus:border-brand-rose/20 text-sm"
+          className="w-full bg-white border-2 border-gray-50 rounded-2xl py-4 pl-12 shadow-sm outline-none focus:border-[#FF4DAD]/20 text-sm"
           value={searchTerm} 
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      {/* GRADE DE TEMAS */}
       <div className="flex flex-col gap-4">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Pastas de Clamor</h3>
         <div className="grid grid-cols-3 gap-2">
@@ -73,57 +65,29 @@ const Prayers: React.FC<any> = ({ prayers = [], toggleFavorite, onNavigate }) =>
         </div>
       </div>
 
-      {/* DIÁRIO */}
-      {!selectedCategory && (
-        <button 
-          onClick={() => onNavigate('memorial')}
-          className="bg-white border-2 border-brand-rose/10 p-5 rounded-[2rem] flex items-center gap-4 mx-1 shadow-sm"
-        >
-          <div className="w-10 h-10 rounded-xl bg-brand-rose/10 flex items-center justify-center text-brand-rose">
-            <i className="fa-solid fa-book-open"></i>
-          </div>
-          <div className="text-left flex-1">
-            <h4 className="font-bold text-[#2D1B4D] text-xs">Memorial de Vitórias</h4>
-            <p className="text-[8px] text-gray-400 font-black uppercase tracking-widest">Ver Diário</p>
-          </div>
-        </button>
-      )}
-
-      {/* LISTA FILTRADA */}
       {selectedCategory && (
         <div className="flex flex-col gap-4 mt-2 animate-slideUp mx-1">
-            <div className="flex items-center justify-between px-2 pb-2 border-b border-gray-100">
+            <div className="flex items-center justify-between px-2 pb-2">
                 <h3 className="text-[10px] font-black text-gray-700 uppercase tracking-wider">
                   {categories.find(c => c.id === selectedCategory)?.label} ({filteredPrayers.length})
                 </h3>
-                <button onClick={() => setSelectedCategory(null)} className="text-[10px] text-brand-rose font-black uppercase">Fechar</button>
+                <button onClick={() => setSelectedCategory(null)} className="text-[10px] text-[#FF4DAD] font-black uppercase">Fechar</button>
             </div>
-            
-            {filteredPrayers.length === 0 && (
-              <div className="text-center py-12">
-                <i className="fa-solid fa-folder-open text-gray-200 text-3xl mb-3"></i>
-                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest px-4">
-                  Nenhum pedido encontrado nesta categoria.
-                </p>
-              </div>
-            )}
-
             {filteredPrayers.map((p: any) => (
                 <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-50 flex flex-col gap-4 relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: categories.find(c => c.id === selectedCategory)?.color }}></div>
                     <div className="flex justify-between items-start">
-                        <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Alvo #{p.dia || p.ordem || p.id}</span>
+                        <span className="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">Alvo #{p.dia || p.id}</span>
                         <button onClick={() => toggleFavorite(p.id)}>
                             <i className={`fa-${p.isFavorite ? 'solid' : 'regular'} fa-star ${p.isFavorite ? 'text-yellow-400' : 'text-gray-200'}`}></i>
                         </button>
                     </div>
-                    <p className="text-[#2D1B4D] text-sm leading-relaxed font-medium">"{p.texto || p.pedido}"</p>
-                    {(p.versiculo || p.referencia) && (
+                    <p className="text-[#2D1B4D] text-sm leading-relaxed italic">"{p.texto}"</p>
+                    {p.versiculo && (
                       <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100">
-                        <span className="text-[9px] font-black text-brand-rose uppercase block mb-1">
-                          <i className="fa-solid fa-book-open mr-1"></i> {p.versiculo || p.referencia}
+                        <span className="text-[9px] font-black text-[#FF4DAD] uppercase block mb-1">
+                          <i className="fa-solid fa-book-open mr-1"></i> {p.versiculo}
                         </span>
-                        {p.texto_biblico && <p className="text-[11px] text-gray-500 leading-tight italic">"{p.texto_biblico}"</p>}
                       </div>
                     )}
                 </div>
