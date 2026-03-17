@@ -1,7 +1,7 @@
 import React from 'react';
 
 const Filhos: React.FC<any> = ({ filhos = [], gcFilhos = [], onNavigate }) => {
-  // Garante que a lista de filhos sempre exista para não travar a tela
+  // Garante que filhos seja sempre uma lista, mesmo se vier erro do banco
   const listaSegura = Array.isArray(filhos) ? filhos : [];
 
   return (
@@ -19,9 +19,6 @@ const Filhos: React.FC<any> = ({ filhos = [], gcFilhos = [], onNavigate }) => {
               <p className="text-purple-200 text-[10px] font-black uppercase tracking-widest">Intercessão Global</p>
             </div>
           </div>
-          <p className="text-purple-100 text-[11px] opacity-80 leading-relaxed">
-            Adotando em oração a próxima geração.
-          </p>
         </div>
       </div>
 
@@ -38,18 +35,24 @@ const Filhos: React.FC<any> = ({ filhos = [], gcFilhos = [], onNavigate }) => {
         </div>
 
         <div className="flex flex-col gap-3">
-          {listaSegura.length > 0 ? listaSegura.map((f: any, i: number) => (
-            <div key={i} className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-50 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center font-bold">
-                {f.nome ? f.nome.charAt(0).toUpperCase() : '?'}
+          {listaSegura.length > 0 ? listaSegura.map((f: any, i: number) => {
+            // PROTEÇÃO: Se o nome estiver vazio, usamos "?" para não travar o charAt
+            const inicial = f && f.nome ? f.nome.charAt(0).toUpperCase() : "?";
+            const nomeExibicao = f && f.nome ? f.nome : "Sem nome";
+
+            return (
+              <div key={i} className="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-50 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center font-bold">
+                  {inicial}
+                </div>
+                <div className="flex-1">
+                  <span className="font-bold text-[#2D1B4D] text-sm">{nomeExibicao}</span>
+                  <p className="text-[10px] text-gray-400 uppercase font-medium">{f.tipo || 'Biológico'}</p>
+                </div>
+                <i className="fa-solid fa-chevron-right text-gray-200 text-xs"></i>
               </div>
-              <div className="flex-1">
-                <span className="font-bold text-[#2D1B4D] text-sm">{f.nome}</span>
-                <p className="text-[10px] text-gray-400 uppercase font-medium">{f.tipo || 'Biológico'}</p>
-              </div>
-              <i className="fa-solid fa-chevron-right text-gray-200 text-xs"></i>
-            </div>
-          )) : (
+            );
+          }) : (
             <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-[2rem] bg-gray-50/30">
               <p className="text-xs text-gray-400 px-10">Toque em cadastrar para incluir seus filhos de oração.</p>
             </div>
@@ -57,11 +60,11 @@ const Filhos: React.FC<any> = ({ filhos = [], gcFilhos = [], onNavigate }) => {
         </div>
       </div>
 
-      {/* Espaço para Filhos GC (Banco Externo) */}
+      {/* Filhos GC */}
       <div className="mt-2 opacity-60">
         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 mb-4">Filhos Adotados (GC)</h3>
         <div className="p-6 border-2 border-dashed border-purple-100 rounded-[2rem] text-center">
-           <p className="text-[10px] text-purple-300 italic">Os filhos da Geração Compromisso aparecerão aqui automaticamente via banco de dados.</p>
+           <p className="text-[10px] text-purple-300 italic">Os filhos da Geração Compromisso aparecerão aqui automaticamente.</p>
         </div>
       </div>
     </div>
