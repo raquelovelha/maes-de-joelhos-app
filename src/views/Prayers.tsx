@@ -5,6 +5,13 @@ const Prayers: React.FC<any> = ({ prayers = [], filhos = [], toggleFavorite, onN
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilhosModal, setShowFilhosModal] = useState(false);
 
+  console.log("=== LISTA DE TEMAS NO FIREBASE ===");
+const temasUnicos = [...new Set(prayers.map(p => p.category))];
+console.log(temasUnicos);
+
+console.log("=== TODOS OS PEDIDOS (DETALHADO) ===");
+console.table(prayers.map(p => ({ Dia: p.dia, Tema: p.category, Texto: p.description.substring(0, 50) + "..." })));
+
   const categories = [
     { id: 'CARATER', label: 'Caráter', icon: 'fa-gem', color: '#64748B', match: 'Caráter, Valores e Emoções' },
     { id: 'FUTURO', label: 'Futuro', icon: 'fa-graduation-cap', color: '#8B5CF6', match: 'Educação, Futuro e Propósito' },
