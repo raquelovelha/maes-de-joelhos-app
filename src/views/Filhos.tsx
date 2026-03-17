@@ -1,21 +1,22 @@
 import React from 'react';
 
-const Filhos: React.FC<any> = ({ filhos = [], onNavigate }) => {
+// Mudamos o nome para FilhosFinal para forçar o Vercel a reconhecer algo novo
+const FilhosFinal: React.FC<any> = ({ filhos = [], onNavigate }) => {
+  const lista = Array.isArray(filhos) ? filhos : [];
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Página de Filhos</h2>
-      <button onClick={() => onNavigate('home')} className="bg-gray-200 p-2 rounded mb-4">Voltar Home</button>
-      
-      <div className="space-y-2">
-        {Array.isArray(filhos) && filhos.map((f: any, i: number) => (
-          <div key={i} className="p-4 border rounded bg-white">
-            {f?.nome || f?.name || "Sem Nome"}
-          </div>
+    <div className="p-10">
+      <h1 className="text-2xl font-bold">Aba Filhos Restaurada</h1>
+      <ul className="mt-4">
+        {lista.map((f: any, i: number) => (
+          <li key={i} className="border-b py-2">
+            {/* USANDO COLCHETES PARA FUGIR DO CHARAT */}
+            <span className="font-bold">[{f?.nome ? f.nome[0] : '?'}]</span> {f?.nome || "Sem nome"}
+          </li>
         ))}
-        {(!filhos || filhos.length === 0) && <p>Nenhum dado encontrado.</p>}
-      </div>
+      </ul>
+      <button onClick={() => onNavigate('home')} className="mt-4 p-2 bg-gray-100 rounded">Voltar</button>
     </div>
   );
 };
 
-export default Filhos;
+export default FilhosFinal;
