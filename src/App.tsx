@@ -16,7 +16,6 @@ import RegisterView from './views/Register';
 import { SplashScreen } from './components/UI';
 
 import { usePrayers } from './hooks/usePrayers';
-import { UserStats, UserProfile } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -25,33 +24,24 @@ const App: React.FC = () => {
   const [timerSeconds, setTimerSeconds] = useState(15 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  const [profile, setProfile] = useState<UserProfile>({
-    name: "Missionária", birthDate: "", church: "", participationTime: "Iniciante", groupName: "",
-    lastPrayerIndex: 0, ultimoResumo: ""
-  });
+  const [profile, setProfile] = useState<any>({ name: "Missionária" });
+  const [stats, setStats] = useState<any>({ streak: 0, totalMinutes: 0 });
 
-  const [stats, setStats] = useState<UserStats>({ 
-    streak: 0, totalMinutes: 0, totalDays: 0, hasDailyTrophy: false 
-  });
-
-  // Dados centrais vindos do Firebase via Hook
   const { prayers, memorial, filhos, loading: prayersLoading } = usePrayers();
 
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         const docRef = doc(db, "usuarios", currentUser.uid);
         const unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
-            setProfile(prev => ({ ...prev, ...data }));
+            setProfile(data);
             setStats({
               streak: data.diasConsecutivos || 0,
               totalMinutes: data.minutosIntercedidos || 0,
-              totalDays: data.totalDias || 0,
-              hasDailyTrophy: data.ultimoDiaOrado === new Date().toISOString().split('T')[0]
             });
           }
           setIsLoading(false);
@@ -69,70 +59,29 @@ const App: React.FC = () => {
 
   const renderView = () => {
     switch (activeTab) {
-      case 'home': 
-        return <HomeView profile={profile} onNavigate={setActiveTab} />;
-      
-      case 'prayers': 
-        return <PrayersView prayers={prayers} onNavigate={setActiveTab} />;
-      
-      case 'filhos':
-        // Passando apenas o que a nova FilhosView precisa
-        return (
-          <FilhosView 
-            filhos={filhos} 
-            gcFilhos={[]} 
-            onNavigate={setActiveTab} 
-          />
-        );
-      
-      case 'novo-filho':
-        return <NovoFilhoView onNavigate={setActiveTab} />;
-
-      case 'memorial': 
-        return <MemorialView memorial={memorial} loading={false} onNavigate={setActiveTab} />;
-
+      case 'home': return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      case 'prayers': return <PrayersView prayers={prayers} onNavigate={setActiveTab} />;
+      case 'filhos': return <FilhosView filhos={filhos} onNavigate={setActiveTab} />;
+      case 'novo-filho': return <NovoFilhoView onNavigate={setActiveTab} />;
+      case 'memorial': return <MemorialView memorial={memorial} onNavigate={setActiveTab} />;
       case 'timer':
         return (
           <TimerView 
-            user={user}
-            userProfile={profile}
-            prayers={prayers} 
-            timeLeft={timerSeconds}
-            setTimeLeft={setTimerSeconds}
-            isTimerActive={isTimerRunning}
-            setIsTimerActive={setIsTimerRunning}
-            onFinish={async (sessionLogs, currentIdx) => {
-              const totalSeconds = (15 * 60) - timerSeconds;
-              const minutes = Math.floor(totalSeconds / 60);
-
-              if (user) {
-                const userRef = doc(db, "usuarios", user.uid);
-                await updateDoc(userRef, {
-                  minutosIntercedidos: increment(minutes > 0 ? minutes : 0),
-                  ultimoDiaOrado: new Date().toISOString().split('T')[0],
-                  lastPrayerIndex: currentIdx
-                });
-              }
-              setActiveTab('home');
-              setIsTimerRunning(false);
-              setTimerSeconds(15 * 60);
-            }} 
-            onViewDiary={() => setActiveTab('memorial')}
+            user={user} prayers={prayers} timeLeft={timerSeconds} setTimeLeft={setTimerSeconds}
+            isTimerActive={isTimerRunning} setIsTimerActive={setIsTimerRunning}
+            onFinish={() => setActiveTab('home')} 
           />
         );
-      
       case 'community': return <CommunityView />;
-      case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} onNavigate={setActiveTab} />;
-      
-      default: 
-        return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      case 'profile': return <Profile profile={profile} stats={stats} onNavigate={setActiveTab} />;
+      default: return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-[#FAFAFE] overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAFAFE]">
       <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
-        <main className={`max-w-md mx-auto ${activeTab === 'timer' ? 'px-0' : 'px-4'} pb-32 pt-4`}>
+        <main className="max-w-md mx-auto px-4 pb-32 pt-4">
           {renderView()}
         </main>
       </Layout>
