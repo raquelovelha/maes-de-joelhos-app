@@ -6,7 +6,7 @@ import { db } from './firebase';
 import Layout from './components/Layout';
 import HomeView from './views/Home';
 import PrayersView from './views/Prayers';
-import FilhosView from './views/Filhos'; // Certifique-se que o arquivo é Filhos.tsx
+import FilhosView from './views/Filhos';
 import NovoFilhoView from './views/NovoFilho'; 
 import CommunityView from './views/Community';
 import TimerView from './views/Timer'; 
@@ -34,7 +34,7 @@ const App: React.FC = () => {
     streak: 0, totalMinutes: 0, totalDays: 0, hasDailyTrophy: false 
   });
 
-  // Pegamos 'filhos' e 'memorial' do nosso hook central
+  // Dados centrais vindos do Firebase via Hook
   const { prayers, memorial, filhos, loading: prayersLoading } = usePrayers();
 
   useEffect(() => {
@@ -76,8 +76,14 @@ const App: React.FC = () => {
         return <PrayersView prayers={prayers} onNavigate={setActiveTab} />;
       
       case 'filhos':
-        // IMPORTANTE: Passando 'filhos' e 'gcFilhos' (vazio por enquanto)
-        return <FilhosView filhos={filhos} gcFilhos={[]} onNavigate={setActiveTab} />;
+        // Passando apenas o que a nova FilhosView precisa
+        return (
+          <FilhosView 
+            filhos={filhos} 
+            gcFilhos={[]} 
+            onNavigate={setActiveTab} 
+          />
+        );
       
       case 'novo-filho':
         return <NovoFilhoView onNavigate={setActiveTab} />;
@@ -117,7 +123,9 @@ const App: React.FC = () => {
       
       case 'community': return <CommunityView />;
       case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} onNavigate={setActiveTab} />;
-      default: return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      
+      default: 
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
 
