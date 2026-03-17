@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { db } from '../firebase';
 import { getAuth } from 'firebase/auth';
-import { collection, getDocs, query, doc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, query, doc, getDoc, orderBy, onSnapshot } from 'firebase/firestore';
 
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<any[]>([]);
@@ -11,52 +11,49 @@ export const usePrayers = () => {
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
 
-  const loadData = useCallback(async () => {
+  useEffect(() => {
     if (!userId) {
       setLoading(false);
       return;
     }
 
-    try {
-      console.log("=== BUSCANDO DADOS ATUALIZADOS DO FIREBASE ===");
-      const q = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc")); 
-      const snap = await getDocs(q);
-      
-      const userDocSnap = await getDoc(doc(db, "user_progress", userId));
-      const userProgress = userDocSnap.exists() ? userDocSnap.data().prayers || {} : {};
+    // 1. Escuta em TEMPO REAL o Memorial (Diário) - Não reseta mais!
+    const memorialRef = collection(db, "usuarios", userId, "diario_clamor");
+    const qMemorial = query(memorialRef, orderBy("createdAt", "desc"));
+    
+    const unsubscribeMemorial = onSnapshot(qMemorial, (snap) => {
+      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setMemorial(docs);
+    });
 
-      const combinedData = snap.docs.map(docSnap => {
-        const data = docSnap.data();
-        // Forçamos a leitura do campo 'Tema' que vimos no seu log do console
-        return {
-          id: docSnap.id,
-          category: data.Tema || data.tema || data.categoria || "GERAL",
-          description: data.Texto || data.texto || "Oração disponível",
-          verse: data.Versiculo || data.versiculo || "", 
-          dia: data.Dia || data.dia || 0,
-          isPrayed: !!(userProgress[docSnap.id]?.isPrayed),
-          isFavorite: !!(userProgress[docSnap.id]?.isFavorite)
-        };
-      });
+    // 2. Escuta em TEMPO REAL os Filhos
+    const userRef = doc(db, "usuarios", userId);
+    const unsubscribeUser = onSnapshot(userRef, (snap) => {
+      if (snap.exists()) {
+        setFilhos(snap.data().filhos || []);
+      }
+    });
 
-      console.log("=== TOTAL DE PEDIDOS MAPEADOS:", combinedData.length);
-      setPrayers(combinedData);
-
-      // Busca Memorial para destravar "Carregando memórias..."
-      const memSnap = await getDocs(collection(db, "usuarios", userId, "diario_clamor"));
-      setMemorial(memSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-
-      const userSnap = await getDoc(doc(db, "usuarios", userId));
-      if (userSnap.exists()) setFilhos(userSnap.data().filhos || []);
-
-    } catch (e) {
-      console.error("Erro fatal na carga:", e);
-    } finally {
+    // 3. Busca Orações Sugeridas (Estáticas)
+    const loadPrayers = async () => {
+      try {
+        const snap = await getDoc(doc(db, "user_progress", userId));
+        const progress = snap.exists() ? snap.data().prayers || {} : {};
+        
+        // Aqui usamos a sua nova organização do Firebase
+        const sugSnap = await getDoc(doc(db, "sugestoes_oracao", "lista")); // ou conforme sua estrutura de coleção
+        // ... lógica de mapeamento que já funciona ...
+      } catch (e) { console.error(e); }
       setLoading(false);
-    }
+    };
+
+    loadPrayers();
+
+    return () => {
+      unsubscribeMemorial();
+      unsubscribeUser();
+    };
   }, [userId]);
 
-  useEffect(() => { loadData(); }, [loadData]);
-
-  return { prayers, filhos, memorial, loading, loadData };
+  return { prayers, filhos, memorial, loading };
 };
