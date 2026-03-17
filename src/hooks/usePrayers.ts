@@ -18,13 +18,12 @@ export const usePrayers = () => {
     }
 
     // Busca Perfil do Usuário (onde ficam os filhos)
-    const userRef = doc(db, "usuarios", userId);
-    const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setFilhos(data.filhos || []); // Atualiza a lista de filhos
-      }
-    });
+const userRef = doc(db, "usuarios", userId);
+const unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+  if (docSnap.exists()) {
+    setFilhos(docSnap.data().filhos || []); // <--- Isso aqui alimenta a aba Filhos
+  }
+});
 
     // Memorial em tempo real
     const memorialRef = collection(db, "usuarios", userId, "diario_clamor");

@@ -1,8 +1,8 @@
 import React from 'react';
 
 const Filhos: React.FC<any> = ({ filhos = [], gcFilhos = [], onNavigate }) => {
-  // Trava de segurança: se por algum motivo 'filhos' vier nulo, ele vira um array vazio
-  const listaFilhos = Array.isArray(filhos) ? filhos : [];
+  // Se 'filhos' vier com erro, ele vira uma lista vazia e não trava a tela
+  const listaSegura = Array.isArray(filhos) ? filhos : [];
 
   return (
     <div className="flex flex-col gap-6 pb-24 pt-4 px-4 min-h-screen bg-[#FDFCFE]">
