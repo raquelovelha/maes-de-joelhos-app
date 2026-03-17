@@ -4,27 +4,28 @@ const Prayers: React.FC<any> = ({ prayers = [], filhos = [], onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const categories = [
-    { id: 'SALVACAO', label: 'Salvação', icon: 'fa-cross', firebase: 'Salvação e Crescimento Espiritual' },
-    { id: 'PROTECAO', label: 'Proteção', icon: 'fa-shield-halved', firebase: 'Proteção, Livramentos e Batalha Espiritual' },
-    { id: 'MINISTERIO', label: 'Ministério', icon: 'fa-fire-alt', firebase: 'Vida Espiritual e Ministério' },
-    { id: 'CARATER', label: 'Caráter', icon: 'fa-gem', firebase: 'Caráter, Valores e Emoções' },
-    { id: 'SAUDE', label: 'Saúde', icon: 'fa-heart-pulse', firebase: 'Saúde e Necessidades Humanas' },
-    { id: 'FUTURO', label: 'Futuro', icon: 'fa-graduation-cap', firebase: 'Educação, Futuro e Propósito' },
-    { id: 'FAMILIA', label: 'Família', icon: 'fa-house-chimney-heart', firebase: 'Relacionamentos e Família' },
-    { id: 'MISSOES', label: 'Missões', icon: 'fa-globe-americas', firebase: 'Missões e Sociedade' },
-    { id: 'GRATIDAO', label: 'Gratidão', icon: 'fa-sun', firebase: 'Gratidão e Esperança' },
-  ];
+  { id: 'SALVACAO', label: 'Salvação', icon: 'fa-cross', firebase: 'Salvação e Crescimento Espiritual' },
+  { id: 'PROTECAO', label: 'Proteção', icon: 'fa-shield-halved', firebase: 'Proteção, Livramentos e Batalha Espiritual' },
+  { id: 'MINISTERIO', label: 'Ministério', icon: 'fa-fire-alt', firebase: 'Vida Espiritual e Ministério' },
+  { id: 'CARATER', label: 'Caráter', icon: 'fa-gem', firebase: 'Caráter, Valores e Emoções' },
+  { id: 'SAUDE', label: 'Saúde', icon: 'fa-heart-pulse', firebase: 'Saúde e Necessidades Humanas' },
+  { id: 'FUTURO', label: 'Futuro', icon: 'fa-graduation-cap', firebase: 'Educação, Futuro e Propósito' },
+  { id: 'FAMILIA', label: 'Família', icon: 'fa-house-chimney-heart', firebase: 'Relacionamentos e Família' },
+  { id: 'MISSOES', label: 'Missões', icon: 'fa-globe-americas', firebase: 'Missões e Sociedade' },
+  { id: 'GRATIDAO', label: 'Gratidão', icon: 'fa-sun', firebase: 'Gratidão e Esperança' },
+];
 
   const filteredPrayers = useMemo(() => {
-    if (!selectedCategory) return [];
-    const config = categories.find(c => c.id === selectedCategory);
-    
-    // FILTRO LIMPO: Só pega o que bate exatamente com o tema organizado
-    // Ignora completamente o que for "GERAL"
-    return prayers.filter((p: any) => 
-      String(p.tema || p.category || '').trim() === config?.firebase
-    );
-  }, [prayers, selectedCategory]);
+  if (!selectedCategory) return [];
+  const config = categories.find(c => c.id === selectedCategory);
+  if (!config) return [];
+
+  return prayers.filter((p: any) => {
+    const temaBanco = String(p.category || '').trim();
+    // Verifica se o tema do banco começa com o nome principal ou é igual ao nome longo
+    return temaBanco.includes(config.label) || temaBanco === config.firebase;
+  });
+}, [prayers, selectedCategory]);
 
   return (
     <div className="flex flex-col gap-6 pb-24 pt-4 px-2">
