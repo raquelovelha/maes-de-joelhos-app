@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import HomeView from './views/Home';
 import PrayersView from './views/Prayers';
 import FilhosView from './views/Filhos';
+import NovoFilhoView from './views/NovoFilho'; // Importe a nova view
 import CommunityView from './views/Community';
 import TimerView from './views/Timer'; 
 import Profile from './views/Profile'; 
@@ -14,7 +15,6 @@ import MemorialView from './views/Memorial';
 import RegisterView from './views/Register'; 
 import { SplashScreen } from './components/UI';
 
-import { useChildren } from './hooks/useChildren';
 import { usePrayers } from './hooks/usePrayers';
 import { UserStats, UserProfile } from './types';
 
@@ -33,6 +33,9 @@ const App: React.FC = () => {
   const [stats, setStats] = useState<UserStats>({ 
     streak: 0, totalMinutes: 0, totalDays: 0, hasDailyTrophy: false 
   });
+
+  // Centralizamos os dados aqui
+  const { prayers, memorial, filhos, loading: prayersLoading } = usePrayers();
 
   useEffect(() => {
     const auth = getAuth();
@@ -61,9 +64,6 @@ const App: React.FC = () => {
     return () => unsubscribeAuth();
   }, []);
 
-  const { children, addChild, deleteChild, addRequest, toggleRequestStatus, registerPrayerTime } = useChildren([]);
-  const { prayers, toggleFavorite, loading: prayersLoading } = usePrayers();
-
   if (isLoading || (user && prayersLoading)) return <SplashScreen />;
   if (!user) return <RegisterView />;
 
@@ -71,8 +71,20 @@ const App: React.FC = () => {
     switch (activeTab) {
       case 'home': 
         return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      
       case 'prayers': 
-        return <PrayersView prayers={prayers} toggleFavorite={toggleFavorite} onNavigate={setActiveTab} />;
+        return <PrayersView prayers={prayers} onNavigate={setActiveTab} />;
+      
+      case 'filhos':
+        // Agora passamos 'filhos' que vem do usePrayers (Firebase)
+        return <FilhosView filhos={filhos} gcFilhos={[]} onNavigate={setActiveTab} />;
+      
+      case 'novo-filho':
+        return <NovoFilhoView onNavigate={setActiveTab} />;
+
+      case 'memorial': 
+        return <MemorialView memorial={memorial} loading={false} onNavigate={setActiveTab} />;
+
       case 'timer':
         return (
           <TimerView 
@@ -89,20 +101,17 @@ const App: React.FC = () => {
 
               if (user) {
                 const userRef = doc(db, "usuarios", user.uid);
-                
-                let resumo = "";
-                if (sessionLogs.length > 0) {
-                  resumo = `Na última intercessão, orou por pedidos importantes. Deus ouviu o seu clamor sobre ${sessionLogs.length} alvo(s) e as suas anotações foram guardadas.`;
-                }
+                let resumo = sessionLogs.length > 0 
+                  ? `Deus ouviu seu clamor sobre ${sessionLogs.length} alvo(s). Suas memórias foram guardadas.`
+                  : "";
 
                 await updateDoc(userRef, {
                   minutosIntercedidos: increment(minutes > 0 ? minutes : 0),
                   ultimoDiaOrado: new Date().toISOString().split('T')[0],
                   ultimoResumo: resumo,
-                  lastPrayerIndex: currentIdx // Salva o índice atual para continuar daqui ou do próximo
+                  lastPrayerIndex: currentIdx
                 });
               }
-
               setActiveTab('home');
               setIsTimerRunning(false);
               setTimerSeconds(15 * 60);
@@ -110,19 +119,18 @@ const App: React.FC = () => {
             onViewDiary={() => setActiveTab('memorial')}
           />
         );
-      case 'filhos':
-        return <FilhosView children={children} onAddChild={addChild} onDeleteChild={deleteChild} onAddRequest={addRequest} onToggleRequest={toggleRequestStatus} onRegisterPrayer={registerPrayerTime} onAccept={() => {}} />;
+      
       case 'community': return <CommunityView />;
       case 'profile': return <Profile profile={profile} stats={stats} setProfile={setProfile} onNavigate={setActiveTab} />;
-      case 'memorial': return <MemorialView user={user} onBack={() => setActiveTab('home')} />;
       default: return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
 
   return (
     <div className="relative min-h-screen bg-[#FAFAFE] overflow-x-hidden">
+      {/* Escondemos o Layout (menu inferior) quando o Timer estiver rodando para focar na oração */}
       <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
-        <main className="max-w-md mx-auto px-4 pb-32 pt-4">
+        <main className={`max-w-md mx-auto ${activeTab === 'timer' ? 'px-0' : 'px-4'} pb-32 pt-4`}>
           {renderView()}
         </main>
       </Layout>
