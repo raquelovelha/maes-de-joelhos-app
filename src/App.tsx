@@ -6,8 +6,8 @@ import { db } from './firebase';
 import Layout from './components/Layout';
 import HomeView from './views/Home';
 import PrayersView from './views/Prayers';
-import FilhosView from './views/Filhos';
-import NovoFilhoView from './views/NovoFilho'; // Importe a nova view
+import FilhosView from './views/Filhos'; // Certifique-se que o arquivo é Filhos.tsx
+import NovoFilhoView from './views/NovoFilho'; 
 import CommunityView from './views/Community';
 import TimerView from './views/Timer'; 
 import Profile from './views/Profile'; 
@@ -34,7 +34,7 @@ const App: React.FC = () => {
     streak: 0, totalMinutes: 0, totalDays: 0, hasDailyTrophy: false 
   });
 
-  // Centralizamos os dados aqui
+  // Pegamos 'filhos' e 'memorial' do nosso hook central
   const { prayers, memorial, filhos, loading: prayersLoading } = usePrayers();
 
   useEffect(() => {
@@ -76,7 +76,7 @@ const App: React.FC = () => {
         return <PrayersView prayers={prayers} onNavigate={setActiveTab} />;
       
       case 'filhos':
-        // Agora passamos 'filhos' que vem do usePrayers (Firebase)
+        // IMPORTANTE: Passando 'filhos' e 'gcFilhos' (vazio por enquanto)
         return <FilhosView filhos={filhos} gcFilhos={[]} onNavigate={setActiveTab} />;
       
       case 'novo-filho':
@@ -101,14 +101,9 @@ const App: React.FC = () => {
 
               if (user) {
                 const userRef = doc(db, "usuarios", user.uid);
-                let resumo = sessionLogs.length > 0 
-                  ? `Deus ouviu seu clamor sobre ${sessionLogs.length} alvo(s). Suas memórias foram guardadas.`
-                  : "";
-
                 await updateDoc(userRef, {
                   minutosIntercedidos: increment(minutes > 0 ? minutes : 0),
                   ultimoDiaOrado: new Date().toISOString().split('T')[0],
-                  ultimoResumo: resumo,
                   lastPrayerIndex: currentIdx
                 });
               }
@@ -128,7 +123,6 @@ const App: React.FC = () => {
 
   return (
     <div className="relative min-h-screen bg-[#FAFAFE] overflow-x-hidden">
-      {/* Escondemos o Layout (menu inferior) quando o Timer estiver rodando para focar na oração */}
       <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
         <main className={`max-w-md mx-auto ${activeTab === 'timer' ? 'px-0' : 'px-4'} pb-32 pt-4`}>
           {renderView()}
