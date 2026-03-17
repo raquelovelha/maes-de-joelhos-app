@@ -6,7 +6,7 @@ import { collection, getDocs, query, doc, getDoc, orderBy } from 'firebase/fires
 export const usePrayers = () => {
   const [prayers, setPrayers] = useState<any[]>([]);
   const [filhos, setFilhos] = useState<any[]>([]);
-  const [memorial, setMemorial] = useState<any[]>([]); // Para destravar o Diário
+  const [memorial, setMemorial] = useState<any[]>([]); 
   const [loading, setLoading] = useState(true);
   const auth = getAuth();
   const userId = auth.currentUser?.uid;
@@ -18,7 +18,7 @@ export const usePrayers = () => {
     }
 
     try {
-      // 1. Busca as orações (Corrigindo para ler o campo 'tema')
+      console.log("=== BUSCANDO DADOS ATUALIZADOS DO FIREBASE ===");
       const q = query(collection(db, "sugestoes_oracao"), orderBy("dia", "asc")); 
       const snap = await getDocs(q);
       
@@ -27,36 +27,30 @@ export const usePrayers = () => {
 
       const combinedData = snap.docs.map(docSnap => {
         const data = docSnap.data();
-        const id = docSnap.id;
-        const progress = userProgress[id] || {};
-
+        // Forçamos a leitura do campo 'Tema' que vimos no seu log do console
         return {
-          id: id,
-          // AJUSTE AQUI: Lendo 'tema' que é o que está no seu Firebase
-          category: data.tema || data.categoria || "GERAL",
-          description: data.texto || data.description || "Oração disponível",
-          verse: data.versiculo || data.verse || "", 
-          dia: data.dia || 0,
-          isPrayed: !!progress.isPrayed,
-          isFavorite: !!progress.isFavorite
+          id: docSnap.id,
+          category: data.Tema || data.tema || data.categoria || "GERAL",
+          description: data.Texto || data.texto || "Oração disponível",
+          verse: data.Versiculo || data.versiculo || "", 
+          dia: data.Dia || data.dia || 0,
+          isPrayed: !!(userProgress[docSnap.id]?.isPrayed),
+          isFavorite: !!(userProgress[docSnap.id]?.isFavorite)
         };
       });
+
+      console.log("=== TOTAL DE PEDIDOS MAPEADOS:", combinedData.length);
       setPrayers(combinedData);
 
-      // 2. Busca os filhos
-      const userRef = doc(db, "usuarios", userId);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        setFilhos(userSnap.data().filhos || []);
-      }
+      // Busca Memorial para destravar "Carregando memórias..."
+      const memSnap = await getDocs(collection(db, "usuarios", userId, "diario_clamor"));
+      setMemorial(memSnap.docs.map(d => ({ id: d.id, ...d.data() })));
 
-      // 3. Busca o Diário (Para tirar a tela de "Carregando memórias")
-      const memorialSnap = await getDocs(collection(db, "usuarios", userId, "diario_clamor"));
-      const memorialData = memorialSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setMemorial(memorialData);
+      const userSnap = await getDoc(doc(db, "usuarios", userId));
+      if (userSnap.exists()) setFilhos(userSnap.data().filhos || []);
 
     } catch (e) {
-      console.error("Erro ao carregar dados:", e);
+      console.error("Erro fatal na carga:", e);
     } finally {
       setLoading(false);
     }
@@ -64,9 +58,5 @@ export const usePrayers = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const toggleFavorite = useCallback((id: any) => {
-    setPrayers(prev => prev.map(p => p.id === id ? { ...p, isFavorite: !p.isFavorite } : p));
-  }, []);
-
-  return { prayers, filhos, memorial, loading, toggleFavorite, loadData };
+  return { prayers, filhos, memorial, loading, loadData };
 };
