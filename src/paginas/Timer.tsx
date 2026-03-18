@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../services/firebase'; // O ENDEREÇO CERTO É ESSE! 🎯
+import { db } from '../services/firebase'; // Endereço correto que confirmamos!
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 
 const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerActive, setIsTimerActive, onFinish }: any) => {
@@ -34,23 +34,6 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
     setPrayerNote("");
   };
 
-  const handleSaveToDiary = async () => {
-    if (!prayerNote.trim() || !user) return;
-    setIsSaving(true);
-    try {
-      await addDoc(collection(db, "diario_clamor"), { 
-        userId: user.uid, 
-        alvo: currentPrayer?.categoria || "Pedido Geral", 
-        relato: prayerNote, 
-        data: serverTimestamp() 
-      });
-      handleNext();
-    } catch (e) { 
-      console.error("Erro ao salvar no diário:", e); 
-    }
-    setIsSaving(false);
-  };
-
   return (
     <div className="flex flex-col items-center gap-6 animate-fadeIn pb-24 text-center">
       {/* Badge do Dia */}
@@ -70,7 +53,7 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
         </div>
       </div>
 
-      {/* CARD PRINCIPAL - ESTILO FOTO 3 */}
+      {/* CARD PRINCIPAL - Com suas alterações de input e botão */}
       <div className="w-full bg-white rounded-[3rem] p-10 shadow-xl shadow-purple-100/40 border border-purple-50 text-left">
         
         <h2 className="serif-font text-[28px] font-bold text-[#2D1B4D] mb-3 leading-tight">
@@ -84,17 +67,29 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
         <textarea
           value={prayerNote}
           onChange={(e) => setPrayerNote(e.target.value)}
-          placeholder="O que o Espírito Santo ministrou ao seu coração?"
-          className="w-full bg-[#F8F9FD] border-none rounded-3xl p-6 text-sm mb-8 min-h-[140px] resize-none focus:ring-2 focus:ring-[#FF4DAD]/5 transition-all placeholder:text-gray-400"
+          placeholder="Escreva aqui e mantenha o seu diário de oração"
+          className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm mb-6 min-h-[120px] focus:ring-1 focus:ring-[#FF4DAD]/20"
         />
 
         <button
-          onClick={handleSaveToDiary}
-          disabled={isSaving || !prayerNote.trim()}
-          className={`w-full py-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.15em] mb-4 transition-all active:scale-95 ${
+          onClick={async () => {
+            if (!prayerNote.trim()) return;
+            setIsSaving(true);
+            try {
+              await addDoc(collection(db, "diario_clamor"), { 
+                userId: user.uid, 
+                alvo: currentPrayer?.categoria || "Pedido Geral", 
+                relato: prayerNote, 
+                data: serverTimestamp() 
+              });
+              handleNext();
+            } catch (e) { console.error(e); }
+            setIsSaving(false);
+          }}
+          className={`w-full py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all ${
             prayerNote.trim() 
-            ? 'bg-[#F0F2F5] text-[#2D1B4D] shadow-sm' 
-            : 'bg-[#F0F2F5] text-gray-400 opacity-60'
+            ? 'bg-[#FF4DAD] text-white shadow-lg shadow-rose-200' 
+            : 'bg-gray-100 text-gray-400'
           }`}
         >
           {isSaving ? 'Gravando...' : 'Salvar no Diário e Próximo'}
@@ -102,7 +97,7 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
 
         <button 
           onClick={handleNext}
-          className="w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#FF4DAD] transition-colors"
+          className="w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4 hover:text-[#FF4DAD] transition-colors"
         >
           Pular este pedido
         </button>
