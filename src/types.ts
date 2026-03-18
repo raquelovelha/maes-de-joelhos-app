@@ -1,13 +1,13 @@
-
 export interface PrayerRequest {
   id: number;
   title: string;
-  description: string;
-  verse: string;
+  description: string; // Este é o seu 'texto'
+  verse: string;       // Este é o seu 'versiculo'
   category: string;
   isFavorite: boolean;
   isPrayed: boolean;
   personalNotes?: string;
+  texto_biblico?: string; // Adicionado para bater com o seu card
 }
 
 export interface ChildOfPrayer {
@@ -22,7 +22,7 @@ export interface ChildOfPrayer {
   startDate: string;
   prayerMinutes: number;
   individualRequests: ChildPrayerRequest[];
-  status?: 'active' | 'pending_review'; // Novo campo para controle de fluxo
+  status?: 'active' | 'pending_review';
 }
 
 export interface ChildPrayerRequest {
@@ -30,9 +30,9 @@ export interface ChildPrayerRequest {
   request: string;
   verse?: string;
   status: 'em_oracao' | 'respondido';
-  createdAt: string; // ISO String
-  resolvedAt?: string; // ISO String quando marcado como respondido
-  lastPrayedAt?: string; // ISO String da última vez que foi especificamente intercedido
+  createdAt: string; 
+  resolvedAt?: string;
+  lastPrayedAt?: string;
   notes?: string;
 }
 
@@ -50,6 +50,7 @@ export interface UserProfile {
   church: string;
   participationTime: string;
   groupName: string;
+  ultimoResumo?: string; // Para a Home não reclamar
 }
 
 export interface CommunityRequest {
@@ -64,5 +65,6 @@ export interface CommunityRequest {
   };
   commentCount: number;
 }
-export type Prayer = PrayerRequest;{
-}
+
+// Sem as chaves extras no final
+export type Prayer = PrayerRequest;
