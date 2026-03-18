@@ -30,11 +30,9 @@ const App: React.FC = () => {
     }
   };
 
-  return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{name: "User"}}>
-      <main className="max-w-md mx-auto p-4 pb-32">
+ return (
+    <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{nome: "Missionária"}}>
         {renderView()}
-      </main>
     </Layout>
   );
 };
