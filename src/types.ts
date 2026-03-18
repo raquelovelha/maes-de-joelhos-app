@@ -64,3 +64,5 @@ export interface CommunityRequest {
   };
   commentCount: number;
 }
+export type Prayer = PrayerRequest;{
+}

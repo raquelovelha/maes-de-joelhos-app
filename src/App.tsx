@@ -8,7 +8,7 @@ import Layout from './components/Layout';
 import HomeView from './paginas/Home';
 import PrayersView from './paginas/Prayers';
 import FilhosView from './paginas/Filhos';
-import TimerView from './paginas/TimerView'; 
+import TimerView from './paginas/Timer'; 
 import AuthView from './paginas/Register'; 
 
 import { usePrayers } from './hooks/usePrayers';

@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 
-const Prayers: React.FC<any> = ({ prayers = [], onNavigate }) => {
+const Prayers: React.FC<any> = ({ prayers = [], filhos = [], onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  // Categorias atualizadas com os novos nomes do seu Firebase
   const categories = [
     { id: 'SALVACAO', label: 'Salvação e Crescimento Espiritual', icon: 'fa-cross', color: 'bg-rose-50', text: 'text-rose-500' },
     { id: 'PROTECAO', label: 'Proteção e Batalha Espiritual', icon: 'fa-shield-halved', color: 'bg-blue-50', text: 'text-blue-500' },
@@ -17,21 +18,28 @@ const Prayers: React.FC<any> = ({ prayers = [], onNavigate }) => {
   const filteredPrayers = useMemo(() => {
     if (!selectedCategory) return [];
     const config = categories.find(c => c.id === selectedCategory);
-    return prayers.filter((p: any) => String(p.category || '').trim() === config?.label);
+    if (!config) return [];
+
+    return prayers.filter((p: any) => {
+      const temaBanco = String(p.category || '').trim();
+      // Filtro por nome exato para aproveitar sua organização
+      return temaBanco === config.label;
+    });
   }, [prayers, selectedCategory]);
 
   const currentCategory = categories.find(c => c.id === selectedCategory);
 
   return (
     <div className="flex flex-col gap-6 pb-24 pt-4 px-2">
-      {/* Apenas botão do Diário no topo agora */}
-      <div className="px-2">
-        <button 
-          onClick={() => onNavigate('memorial')} 
-          className="w-full bg-white p-4 rounded-3xl shadow-sm border border-gray-50 flex items-center justify-center gap-3 active:scale-95 transition-all"
-        >
-          <i className="fa-solid fa-book-open text-[#FF4DAD] text-lg"></i>
-          <span className="text-xs font-black uppercase text-gray-500 tracking-wider">Ver Meu Diário de Clamor</span>
+      {/* Botões de Diário e Filhos */}
+      <div className="flex gap-2">
+        <button onClick={() => onNavigate('memorial')} className="flex-1 bg-white p-4 rounded-3xl shadow-sm border border-gray-50 flex flex-col items-center gap-1 active:scale-95 transition-all">
+          <i className="fa-solid fa-book-open text-brand-rose"></i>
+          <span className="text-[10px] font-black uppercase text-gray-400">Meu Diário</span>
+        </button>
+        <button onClick={() => setSelectedCategory('FILHOS')} className="flex-1 bg-white p-4 rounded-3xl shadow-sm border border-gray-50 flex flex-col items-center gap-1 active:scale-95 transition-all">
+          <i className="fa-solid fa-children text-blue-500"></i>
+          <span className="text-[10px] font-black uppercase text-gray-400">Filhos</span>
         </button>
       </div>
 
@@ -49,7 +57,7 @@ const Prayers: React.FC<any> = ({ prayers = [], onNavigate }) => {
               </div>
               <div className="flex flex-col flex-1">
                 <span className="font-bold text-[#2D1B4D] leading-tight text-sm">{cat.label}</span>
-                <span className={`text-[9px] font-black uppercase mt-1 ${cat.text}`}>Explorar Motivos</span>
+                <span className={`text-[9px] font-black uppercase mt-1 ${cat.text}`}>Explorar motivos</span>
               </div>
               <i className="fa-solid fa-chevron-right text-gray-200 text-xs"></i>
             </button>
@@ -57,28 +65,34 @@ const Prayers: React.FC<any> = ({ prayers = [], onNavigate }) => {
         </div>
       ) : (
         <div className="flex flex-col gap-4 animate-fadeIn">
-          <div className="flex items-center gap-3 px-2">
-            <button 
-              onClick={() => setSelectedCategory(null)} 
-              className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-[#2D1B4D]"
-            >
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSelectedCategory(null)} className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center text-[#2D1B4D]">
               <i className="fa-solid fa-arrow-left"></i>
             </button>
-            <h3 className="font-bold text-lg text-[#2D1B4D] leading-tight">{currentCategory?.label}</h3>
+            <h3 className="font-bold text-lg text-[#2D1B4D] leading-tight">
+              {selectedCategory === 'FILHOS' ? 'Pedidos dos Filhos' : currentCategory?.label}
+            </h3>
           </div>
 
           <div className="space-y-3">
-            {filteredPrayers.length > 0 ? filteredPrayers.map((p: any, i: number) => (
-              <div key={i} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-50 border-l-4 ${currentCategory?.text.replace('text', 'border')}`}>
-                <p className="text-sm text-[#2D1B4D] leading-relaxed mb-3">"{p.description}"</p>
-                {p.verse && (
-                  <span className={`text-[9px] font-black uppercase flex items-center gap-1 ${currentCategory?.text}`}>
-                    <i className="fa-solid fa-book-open"></i> {p.verse}
-                  </span>
-                )}
-              </div>
-            )) : (
-              <div className="text-center py-20 text-gray-400">Nenhum motivo nesta pasta.</div>
+            {selectedCategory === 'FILHOS' ? (
+              filhos.length > 0 ? filhos.map((f: any, i: number) => (
+                <div key={i} className="bg-blue-50/50 p-6 rounded-[2.5rem] border border-blue-100">
+                  <p className="text-[10px] font-black text-blue-600 uppercase mb-1">{f.nome}</p>
+                  <p className="text-sm text-[#2D1B4D] italic">"{f.pedido || f.clamor}"</p>
+                </div>
+              )) : <p className="text-center py-20 text-gray-400">Nenhum filho cadastrado.</p>
+            ) : (
+              filteredPrayers.length > 0 ? filteredPrayers.map((p: any, i: number) => (
+                <div key={i} className={`bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-50 border-l-4 ${currentCategory?.text.replace('text', 'border')}`}>
+                  <p className="text-sm text-[#2D1B4D] leading-relaxed mb-3">"{p.description}"</p>
+                  {p.verse && (
+                    <span className={`text-[9px] font-black uppercase flex items-center gap-1 ${currentCategory?.text}`}>
+                      <i className="fa-solid fa-book-open"></i> {p.verse}
+                    </span>
+                  )}
+                </div>
+              )) : <p className="text-center py-20 text-gray-400">Nenhum pedido nesta pasta.</p>
             )}
           </div>
         </div>
