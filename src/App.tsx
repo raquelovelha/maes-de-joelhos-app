@@ -15,39 +15,31 @@ const App: React.FC = () => {
   const { filhos, loading } = usePrayers();
   const auth = getAuth();
 
-  // ✅ ESCUTA MUDANÇAS DE AUTENTICAÇÃO
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setAuthLoading(false);
     });
-
     return unsubscribe;
   }, [auth]);
 
-  if (loading || authLoading) return <div className="p-10 text-center">Carregando...</div>;
+  if (loading || authLoading) return <div className="p-10 text-center text-purple-600 font-bold">Carregando...</div>;
 
-  // ✅ SE NÃO ESTÁ LOGADO, MOSTRA TELA DE LOGIN/REGISTRO
   if (!currentUser) return <AuthView />;
 
   const renderView = () => {
-    try {
-      // 1. ABA FILHOS (Já estava funcionando)
-      if (activeTab === 'filhos') {
-        return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
-      }
-
-      // 2. ABA ORAÇÕES (NOVA!)
+    try {
+      if (activeTab === 'filhos') {
+        return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
+      }
       if (activeTab === 'prayers') {
         return (
           <div className="p-6 bg-white rounded-3xl shadow-sm border border-brand-lavender/30">
             <h2 className="serif-font text-xl font-black text-brand-dark mb-4">Sugestões de Oração</h2>
-            <p className="text-gray-500 italic">Aqui aparecerão as sugestões diárias...</p>
+            <p className="text-gray-500 italic text-sm">Aqui aparecerão as sugestões diárias baseadas no seu propósito.</p>
           </div>
         );
       }
-
-      // 3. ABA TIMER/15 MINUTOS (NOVA!)
       if (activeTab === 'timer') {
         return (
           <div className="flex flex-col items-center justify-center p-10 text-center">
@@ -59,23 +51,26 @@ const App: React.FC = () => {
           </div>
         );
       }
-
-      // 4. ABA COMUNIDADE (NOVA!)
       if (activeTab === 'community') {
         return (
           <div className="p-6 text-center">
             <i className="fa-solid fa-users text-brand-rose text-4xl mb-4"></i>
             <h2 className="text-xl font-bold">Mural da Comunidade</h2>
-            <p className="text-gray-500">Em breve você poderá ver os pedidos de outras mães.</p>
+            <p className="text-gray-500 italic">Em breve você poderá ver os pedidos de outras mães.</p>
           </div>
         );
       }
-      
-      // PADRÃO: TELA HOME
-      return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
-    } catch (e) {
-      return <div className="p-10 text-brand-rose">Ops! Algo deu errado ao carregar a aba.</div>;
-    }
-  };
+      return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
+    } catch (e) {
+      return <div className="p-10 text-brand-rose">Ops! Algo deu errado ao carregar a aba.</div>;
+    }
+  };
+
+  return (
+    <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{nome: currentUser?.displayName || "Missionária"}}>
+      {renderView()}
+    </Layout>
+  );
+};
 
 export default App;
