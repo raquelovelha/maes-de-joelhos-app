@@ -17,7 +17,12 @@ const App: React.FC = () => {
   const renderView = () => {
     try {
       if (activeTab === 'filhos') {
-        return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
+      return (
+    <FilhosView 
+      filhos={filhos || []} 
+      onNavigate={setActiveTab} 
+    />
+  );
       }
       return <HomeView profile={{name: "Missionária"}} onNavigate={setActiveTab} />;
     } catch (e) {
