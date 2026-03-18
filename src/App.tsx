@@ -8,13 +8,18 @@ import { usePrayers } from './hooks/usePrayers';
 import HomeView from './paginas/Home'; 
 import FilhosView from './paginas/Filhos';
 import AuthView from './paginas/Register';
-import PrayersView from './paginas/Prayers'; // O componente das pastinhas coloridas
+import PrayersView from './paginas/Prayers'; 
+import TimerView from './paginas/TimerView'; // 1. IMPORTANTE: Importar o Timer aqui!
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   
+  // 2. ESTADOS DO TIMER (Precisam ficar aqui no topo!)
+  const [timeLeft, setTimeLeft] = useState(15 * 60); 
+  const [isTimerActive, setIsTimerActive] = useState(false);
+
   // Pegando os dados reais (Orações do Banco, Filhos e Memorial)
   const { filhos, prayers, loading } = usePrayers();
   const auth = getAuth();
@@ -39,22 +44,18 @@ const App: React.FC = () => {
     );
   }
 
-  // Se não estiver logado, vai para o Registro/Login
   if (!currentUser) return <AuthView />;
 
   const renderView = () => {
     try {
-      // 1. ABA HOME
       if (activeTab === 'home') {
         return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
       }
 
-      // 2. ABA FILHOS (GERENCIAMENTO)
       if (activeTab === 'filhos') {
         return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
       }
 
-      // 3. ABA ORAÇÕES (O GLÓRIA A DEUS ORIGINAL - CATEGORIZADO)
       if (activeTab === 'prayers') {
         return (
           <PrayersView 
@@ -65,21 +66,26 @@ const App: React.FC = () => {
         );
       }
 
-      // 4. ABA TIMER (15 MINUTOS DE CLAMOR)
+      // 3. ABA TIMER (Agora chamando o componente corretamente)
       if (activeTab === 'timer') {
         return (
-          <div className="flex flex-col items-center justify-center p-8 text-center min-h-[60vh]">
-            <div className="w-24 h-24 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-6 shadow-sm">
-               <i className="fa-solid fa-stopwatch text-4xl"></i>
-            </div>
-            <h2 className="serif-font text-2xl font-black text-brand-dark">15 Minutos de Clamor</h2>
-            <p className="text-gray-400 mt-2 italic text-sm">Prepare seu coração para o intercâmbio com o Céu.</p>
-            <button className="mt-8 bg-orange-500 text-white px-10 py-4 rounded-full font-black shadow-lg uppercase tracking-widest active:scale-95 transition-all">Iniciar Relógio</button>
-          </div>
+          <TimerView 
+            user={currentUser}
+            userProfile={{ lastPrayerIndex: 0 }} 
+            prayers={prayers || []}
+            timeLeft={timeLeft}
+            setTimeLeft={setTimeLeft}
+            isTimerActive={isTimerActive}
+            setIsTimerActive={setIsTimerActive}
+            onFinish={(logs) => {
+              setIsTimerActive(false);
+              setActiveTab('home'); 
+            }}
+            onViewDiary={() => setActiveTab('prayers')} 
+          />
         );
       }
 
-      // 5. ABA COMUNIDADE
       if (activeTab === 'community') {
         return (
           <div className="p-4 space-y-4 pb-20">
