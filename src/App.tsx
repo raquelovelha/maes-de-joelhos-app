@@ -14,21 +14,21 @@ const App: React.FC = () => {
 
   if (!auth.currentUser) return <div className="p-10 text-center">Por favor, faça login.</div>;
 
-  const renderView = () => {
-    try {
-      if (activeTab === 'filhos') {
+const renderView = () => {
+  try {
+    if (activeTab === 'filhos') {
       return (
-    <FilhosView 
-      filhos={filhos || []} 
-      onNavigate={setActiveTab} 
-    />
-  );
-      }
-      return <HomeView profile={{name: "Missionária"}} onNavigate={setActiveTab} />;
-    } catch (e) {
-      return <div className="p-10">Erro ao carregar aba. Clique em Home.</div>;
+        <FilhosView 
+          filhos={filhos || []} 
+          onNavigate={setActiveTab} 
+        />
+      );
     }
-  };
+    return <HomeView profile={{name: "Missionária"}} onNavigate={setActiveTab} />;
+  } catch (e) {
+    return <div className="p-10">Erro ao carregar aba. Clique em Home.</div>;
+  }
+};
 
  return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{nome: "Missionária"}}>
