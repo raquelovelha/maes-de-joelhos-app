@@ -1,62 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; 
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth'; 
+import { doc, onSnapshot } from 'firebase/firestore'; 
+import { db } from './services/firebase'; // Ajustado para o seu caminho de serviço
 
-import Layout from './components/Layout'; 
-import { usePrayers } from './hooks/usePrayers'; 
-
-// Importando as visões das abas
-import HomeView from './paginas/Home'; 
+import Layout from './components/Layout';
+// Importando de 'paginas' conforme sua estrutura atual
+import HomeView from './paginas/Home';
+import PrayersView from './paginas/Prayers';
 import FilhosView from './paginas/Filhos';
-import AuthView from './paginas/Register';
-import PrayersView from './paginas/Prayers'; 
-import TimerView from './paginas/Timer'; 
+import TimerView from './paginas/TimerView'; 
+import AuthView from './paginas/Register'; 
+
+import { usePrayers } from './hooks/usePrayers';
+import { UserStats, UserProfile } from './types';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null); 
   
-  // 2. ESTADOS DO TIMER (Precisam ficar aqui no topo!)
-  const [timeLeft, setTimeLeft] = useState(15 * 60); 
-  const [isTimerActive, setIsTimerActive] = useState(false);
+  // ESTADO GLOBAL DO TIMER (O cronômetro não para se você mudar de aba!)
+  const [timerSeconds, setTimerSeconds] = useState(15 * 60);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  // Pegando os dados reais (Orações do Banco, Filhos e Memorial)
-  const { filhos, prayers, loading } = usePrayers();
-  const auth = getAuth();
+  const [profile, setProfile] = useState<UserProfile>({
+    name: "Missionária",
+    birthDate: "",
+    church: "",
+    participationTime: "Iniciante",
+    groupName: ""
+  });
+
+  const [stats, setStats] = useState<UserStats>({ 
+    streak: 0, totalMinutes: 0, totalDays: 0, hasDailyTrophy: false 
+  });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setAuthLoading(false);
+    const auth = getAuth();
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const docRef = doc(db, "usuarios", currentUser.uid);
+        const unsubscribeDoc = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setProfile(prev => ({ ...prev, ...data }));
+            setStats({
+              streak: data.diasConsecutivos || 0,
+              totalMinutes: data.minutosIntercedidos || 0,
+              totalDays: data.totalDays || 0,
+              hasDailyTrophy: data.ultimoDiaOrado === new Date().toISOString().split('T')[0]
+            });
+          }
+          setIsLoading(false);
+        });
+        return () => unsubscribeDoc();
+      } else {
+        setIsLoading(false);
+      }
     });
-    return unsubscribe;
-  }, [auth]);
+    return () => unsubscribeAuth();
+  }, []);
 
-  // Tela de Carregamento
-  if (loading || authLoading) {
+  // Hook de dados (Orações e Filhos)
+  const { filhos, prayers, loading: prayersLoading } = usePrayers();
+
+  if (isLoading || (user && prayersLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-lavender/5">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-brand-purple font-bold italic">Carregando Geração Compromisso...</p>
+          <p className="text-brand-purple font-bold italic tracking-wide">Preparando seu Altar...</p>
         </div>
       </div>
     );
   }
 
-  if (!currentUser) return <AuthView />;
+  if (!user) return <AuthView />;
 
   const renderView = () => {
-    try {
-      if (activeTab === 'home') {
-        return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
-      }
-
-      if (activeTab === 'filhos') {
-        return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
-      }
-
-      if (activeTab === 'prayers') {
+    switch (activeTab) {
+      case 'home':
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
+      
+      case 'prayers':
         return (
           <PrayersView 
             prayers={prayers || []} 
@@ -64,49 +91,44 @@ const App: React.FC = () => {
             onNavigate={setActiveTab} 
           />
         );
-      }
 
-      // 3. ABA TIMER (Agora chamando o componente corretamente)
-      if (activeTab === 'timer') {
+      case 'timer':
         return (
           <TimerView 
-            user={currentUser}
-            userProfile={{ lastPrayerIndex: 0 }} 
-            prayers={prayers || []}
-            timeLeft={timeLeft}
-            setTimeLeft={setTimeLeft}
-            isTimerActive={isTimerActive}
-            setIsTimerActive={setIsTimerActive}
-            onFinish={(logs) => {
-              setIsTimerActive(false);
-              setActiveTab('home'); 
-            }}
-            onViewDiary={() => setActiveTab('prayers')} 
+            user={user}
+            userProfile={profile}
+            prayers={prayers || []} 
+            timeLeft={timerSeconds}
+            setTimeLeft={setTimerSeconds}
+            isTimerActive={isTimerRunning}
+            setIsTimerActive={setIsTimerRunning}
+            onFinish={() => {
+              setActiveTab('home');
+              setIsTimerRunning(false);
+              setTimerSeconds(15 * 60);
+            }} 
+            onViewDiary={() => setActiveTab('prayers')}
           />
         );
-      }
 
-      if (activeTab === 'community') {
+      case 'filhos':
+        return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
+
+      case 'community': 
         return (
-          <div className="p-4 space-y-4 pb-20">
-            <h2 className="serif-font text-2xl font-black text-brand-dark mb-4">Mural da Comunidade</h2>
-            <div className="p-10 text-center bg-white rounded-[2.5rem] border border-brand-lavender/20">
-               <i className="fa-solid fa-users text-brand-rose text-3xl mb-3"></i>
-               <p className="text-gray-500 text-sm">Em breve, você poderá compartilhar e receber clamores de outras mães.</p>
-            </div>
+          <div className="p-8 text-center bg-white rounded-[2.5rem] mt-10 border border-brand-lavender/20">
+             <i className="fa-solid fa-users text-brand-rose text-3xl mb-3"></i>
+             <p className="text-gray-500 text-sm italic">O Mural da Comunidade estará disponível em breve para unirmos nossos clamores.</p>
           </div>
         );
-      }
 
-      return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
-    } catch (e) {
-      console.error("Erro na renderização:", e);
-      return <div className="p-10 text-brand-rose font-bold text-center">Ops! Algo falhou ao carregar esta aba.</div>;
+      default: 
+        return <HomeView profile={profile} onNavigate={setActiveTab} />;
     }
   };
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{nome: currentUser?.displayName || "Missionária"}}>
+    <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={profile}>
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         {renderView()}
       </div>
