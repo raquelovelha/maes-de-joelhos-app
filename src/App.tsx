@@ -1,3 +1,5 @@
+import React, { useState, useEffect } from 'react';
+
 import HomeView from './paginas/Home'; 
 import PrayersView from './paginas/Prayers';
 import FilhosView from './paginas/Filhos';
