@@ -6,6 +6,7 @@ import { usePrayers } from './hooks/usePrayers';
 
 import HomeView from './paginas/Home'; 
 import FilhosView from './paginas/Filhos';
+import AuthView from './paginas/Register'; // ✅ ADICIONE ISSO
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
@@ -14,7 +15,8 @@ const App: React.FC = () => {
 
   if (loading) return <div className="p-10 text-center">Carregando...</div>;
 
-  if (!auth.currentUser) return <div className="p-10 text-center">Por favor, faça login.</div>;
+  // ✅ SE NÃO ESTÁ LOGADO, MOSTRA TELA DE LOGIN/REGISTRO
+  if (!auth.currentUser) return <AuthView />;
 
   const renderView = () => {
     try {
