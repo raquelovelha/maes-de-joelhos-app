@@ -4,15 +4,18 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import Layout from './components/Layout'; 
 import { usePrayers } from './hooks/usePrayers'; 
 
+// Importando as visões das abas
 import HomeView from './paginas/Home'; 
 import FilhosView from './paginas/Filhos';
 import AuthView from './paginas/Register';
+import PrayersView from './paginas/Prayers'; // O componente das pastinhas coloridas
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   
+  // Pegando os dados reais (Orações do Banco, Filhos e Memorial)
   const { filhos, prayers, loading } = usePrayers();
   const auth = getAuth();
 
@@ -24,86 +27,81 @@ const App: React.FC = () => {
     return unsubscribe;
   }, [auth]);
 
-  if (loading || authLoading) return <div className="p-10 text-center text-purple-600 font-bold italic">Carregando Geração Compromisso...</div>;
+  // Tela de Carregamento
+  if (loading || authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-lavender/5">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-brand-purple border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-brand-purple font-bold italic">Carregando Geração Compromisso...</p>
+        </div>
+      </div>
+    );
+  }
 
+  // Se não estiver logado, vai para o Registro/Login
   if (!currentUser) return <AuthView />;
 
   const renderView = () => {
     try {
+      // 1. ABA HOME
+      if (activeTab === 'home') {
+        return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
+      }
+
+      // 2. ABA FILHOS (GERENCIAMENTO)
       if (activeTab === 'filhos') {
         return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
       }
 
-      // ABA ORAÇÕES CATEGORIZADAS (O RESGATE!)
+      // 3. ABA ORAÇÕES (O GLÓRIA A DEUS ORIGINAL - CATEGORIZADO)
       if (activeTab === 'prayers') {
         return (
-          <div className="space-y-6 p-4 pb-24">
-            <h2 className="serif-font text-2xl font-black text-brand-dark">Roteiro de Oração</h2>
-            {filhos && filhos.length > 0 ? (
-              filhos.map((filho: any) => (
-                <div key={filho.id} className="bg-white rounded-3xl shadow-sm border border-brand-lavender/20 overflow-hidden">
-                  <div className="bg-brand-purple/5 p-4 border-b border-brand-lavender/10">
-                    <h3 className="text-lg font-black text-brand-purple">🙏 Clamor por {filho.nome}</h3>
-                  </div>
-                  <div className="p-5 space-y-4">
-                    {/* Categoria: Vida Espiritual */}
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 bg-brand-rose/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i className="fa-solid fa-cross text-brand-rose text-xs"></i>
-                      </div>
-                      <div>
-                        <h4 className="text-[10px] font-black uppercase text-brand-dark/40">Vida Espiritual</h4>
-                        <p className="text-sm text-gray-700 leading-relaxed italic">"{filho.oracao || "Senhor, conduza o coração deste filho aos Teus pés."}"</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-10 text-center bg-white rounded-3xl border-2 border-dashed border-brand-lavender/40">
-                <p className="text-gray-500 mb-4">Nenhum filho cadastrado.</p>
-                <button onClick={() => setActiveTab('filhos')} className="bg-brand-purple text-white px-8 py-3 rounded-full font-bold">Cadastrar Agora</button>
-              </div>
-            )}
-          </div>
+          <PrayersView 
+            prayers={prayers || []} 
+            filhos={filhos || []} 
+            onNavigate={setActiveTab} 
+          />
         );
       }
 
+      // 4. ABA TIMER (15 MINUTOS DE CLAMOR)
       if (activeTab === 'timer') {
         return (
           <div className="flex flex-col items-center justify-center p-8 text-center min-h-[60vh]">
-            <div className="w-24 h-24 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-6 shadow-inner animate-pulse">
+            <div className="w-24 h-24 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-6 shadow-sm">
                <i className="fa-solid fa-stopwatch text-4xl"></i>
             </div>
             <h2 className="serif-font text-2xl font-black text-brand-dark">15 Minutos de Clamor</h2>
-            <button className="mt-8 bg-orange-500 text-white px-10 py-4 rounded-full font-black shadow-lg uppercase tracking-widest">Iniciar Relógio</button>
+            <p className="text-gray-400 mt-2 italic text-sm">Prepare seu coração para o intercâmbio com o Céu.</p>
+            <button className="mt-8 bg-orange-500 text-white px-10 py-4 rounded-full font-black shadow-lg uppercase tracking-widest active:scale-95 transition-all">Iniciar Relógio</button>
           </div>
         );
       }
 
+      // 5. ABA COMUNIDADE
       if (activeTab === 'community') {
         return (
           <div className="p-4 space-y-4 pb-20">
-            <h2 className="serif-font text-2xl font-black text-brand-dark">Mural da Comunidade</h2>
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 bg-brand-lavender/5 rounded-2xl border border-white">
-                <p className="text-sm text-gray-700 italic">"Irmãs, peço oração pela saúde da minha família."</p>
-                <span className="text-[10px] text-brand-lavender font-bold uppercase mt-2 block">— Irmã Maria</span>
-              </div>
-            ))}
+            <h2 className="serif-font text-2xl font-black text-brand-dark mb-4">Mural da Comunidade</h2>
+            <div className="p-10 text-center bg-white rounded-[2.5rem] border border-brand-lavender/20">
+               <i className="fa-solid fa-users text-brand-rose text-3xl mb-3"></i>
+               <p className="text-gray-500 text-sm">Em breve, você poderá compartilhar e receber clamores de outras mães.</p>
+            </div>
           </div>
         );
       }
 
       return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
     } catch (e) {
-      return <div className="p-10 text-brand-rose font-bold text-center">Ops! Algo falhou. <br/> <button onClick={() => setActiveTab('home')} className="mt-4 underline">Voltar para Início</button></div>;
+      console.error("Erro na renderização:", e);
+      return <div className="p-10 text-brand-rose font-bold text-center">Ops! Algo falhou ao carregar esta aba.</div>;
     }
   };
 
   return (
     <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{nome: currentUser?.displayName || "Missionária"}}>
-      <div className="animate-in fade-in duration-500">
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         {renderView()}
       </div>
     </Layout>
