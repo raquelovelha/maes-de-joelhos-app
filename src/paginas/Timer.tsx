@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../services/firebase'; // Endereço correto que confirmamos!
+import { db } from '../services/firebase';
 import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 
 const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerActive, setIsTimerActive, onFinish }: any) => {
+  // 1. LÓGICA: Começa sempre no próximo pedido baseado no perfil da usuária
   const [currentPrayerIndex, setCurrentPrayerIndex] = useState(userProfile?.lastPrayerIndex || 0);
   const [prayerNote, setPrayerNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -17,31 +18,63 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
     return () => clearInterval(interval);
   }, [isTimerActive, timeLeft]);
 
+  // Sincroniza o index se o perfil demorar a carregar
+  useEffect(() => {
+    if (userProfile?.lastPrayerIndex !== undefined) {
+      setCurrentPrayerIndex(userProfile.lastPrayerIndex);
+    }
+  }, [userProfile]);
+
   if (!prayers || prayers.length === 0) {
     return <div className="py-20 text-center text-[#FF4DAD] font-bold">Carregando intercessão...</div>;
   }
 
   const currentPrayer = prayers[currentPrayerIndex % prayers.length];
 
+  // 2. LÓGICA: Atualiza o progresso no Firebase para nunca repetir o mesmo pedido
   const handleNext = async () => {
     const nextIdx = currentPrayerIndex + 1;
     if (user) {
       try {
-        await updateDoc(doc(db, "usuarios", user.uid), { lastPrayerIndex: nextIdx });
-      } catch (e) { console.error("Erro ao salvar progresso:", e); }
+        const userRef = doc(db, "usuarios", user.uid);
+        await updateDoc(userRef, { 
+          lastPrayerIndex: nextIdx,
+          lastActive: serverTimestamp() 
+        });
+      } catch (e) {
+        console.error("Erro ao salvar progresso:", e);
+      }
     }
     setCurrentPrayerIndex(nextIdx);
     setPrayerNote("");
   };
 
+  const handleSaveToDiary = async () => {
+    if (!prayerNote.trim() || !user) return;
+    setIsSaving(true);
+    try {
+      // 3. LÓGICA: Registro no diário vinculado ao ID da usuária
+      await addDoc(collection(db, "diario_clamor"), { 
+        userId: user.uid, 
+        alvo: currentPrayer?.categoria || "Pedido de Oração",
+        textoAlvo: currentPrayer?.texto || "", 
+        relato: prayerNote, 
+        data: serverTimestamp() 
+      });
+      // Após salvar, avança para o próximo
+      await handleNext();
+    } catch (e) { 
+      console.error("Erro ao salvar no diário:", e); 
+    }
+    setIsSaving(false);
+  };
+
   return (
     <div className="flex flex-col items-center gap-6 animate-fadeIn pb-24 text-center">
-      {/* Badge do Dia */}
       <div className="bg-[#FF4DAD]/10 text-[#FF4DAD] px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mt-2">
-        Intercessão Diária • Alvo {currentPrayerIndex + 1} de {prayers.length}
+        Intercessão Diária • Alvo {currentPrayerIndex + 1}
       </div>
 
-      {/* Timer Circular */}
       <div className="w-44 h-44 rounded-full border-[6px] border-[#FF4DAD]/5 flex items-center justify-center bg-white shadow-sm relative">
         <div className="text-center">
           <span className="text-5xl font-black text-[#2D1B4D] block tracking-tighter tabular-nums">
@@ -53,9 +86,7 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
         </div>
       </div>
 
-      {/* CARD PRINCIPAL - Com suas alterações de input e botão */}
       <div className="w-full bg-white rounded-[3rem] p-10 shadow-xl shadow-purple-100/40 border border-purple-50 text-left">
-        
         <h2 className="serif-font text-[28px] font-bold text-[#2D1B4D] mb-3 leading-tight">
           Pedido de Oração
         </h2>
@@ -72,29 +103,18 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
         />
 
         <button
-          onClick={async () => {
-            if (!prayerNote.trim()) return;
-            setIsSaving(true);
-            try {
-              await addDoc(collection(db, "diario_clamor"), { 
-                userId: user.uid, 
-                alvo: currentPrayer?.categoria || "Pedido Geral", 
-                relato: prayerNote, 
-                data: serverTimestamp() 
-              });
-              handleNext();
-            } catch (e) { console.error(e); }
-            setIsSaving(false);
-          }}
+          onClick={handleSaveToDiary}
+          disabled={isSaving}
           className={`w-full py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest transition-all ${
             prayerNote.trim() 
             ? 'bg-[#FF4DAD] text-white shadow-lg shadow-rose-200' 
-            : 'bg-gray-100 text-gray-400'
+            : 'bg-gray-100 text-gray-400 opacity-60'
           }`}
         >
           {isSaving ? 'Gravando...' : 'Salvar no Diário e Próximo'}
         </button>
 
+        {/* BOTÃO PULAR: Ele agora salva o progresso mesmo sem diário */}
         <button 
           onClick={handleNext}
           className="w-full text-center text-[10px] font-black text-gray-400 uppercase tracking-widest mt-4 hover:text-[#FF4DAD] transition-colors"
@@ -103,7 +123,6 @@ const TimerView = ({ user, userProfile, prayers, timeLeft, setTimeLeft, isTimerA
         </button>
       </div>
 
-      {/* Controles Inferiores */}
       <div className="flex flex-col items-center gap-5 mt-2">
         <div className="flex items-center gap-5">
             <button
