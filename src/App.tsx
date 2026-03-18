@@ -9,7 +9,7 @@ import HomeView from './paginas/Home';
 import FilhosView from './paginas/Filhos';
 import AuthView from './paginas/Register';
 import PrayersView from './paginas/Prayers'; 
-import TimerView from './paginas/TimerView'; // 1. IMPORTANTE: Importar o Timer aqui!
+import TimerView from './paginas/Timer'; 
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
