@@ -31,26 +31,51 @@ const App: React.FC = () => {
   if (!currentUser) return <AuthView />;
 
   const renderView = () => {
-    try {
-      if (activeTab === 'filhos') {
+    try {
+      // 1. ABA FILHOS (Já estava funcionando)
+      if (activeTab === 'filhos') {
+        return <FilhosView filhos={filhos || []} onNavigate={setActiveTab} />;
+      }
+
+      // 2. ABA ORAÇÕES (NOVA!)
+      if (activeTab === 'prayers') {
         return (
-          <FilhosView 
-            filhos={filhos || []} 
-            onNavigate={setActiveTab} 
-          />
+          <div className="p-6 bg-white rounded-3xl shadow-sm border border-brand-lavender/30">
+            <h2 className="serif-font text-xl font-black text-brand-dark mb-4">Sugestões de Oração</h2>
+            <p className="text-gray-500 italic">Aqui aparecerão as sugestões diárias...</p>
+          </div>
         );
       }
-      return <HomeView profile={{name: "Missionária"}} onNavigate={setActiveTab} />;
-    } catch (e) {
-      return <div className="p-10">Erro ao carregar aba. Clique em Home.</div>;
-    }
-  };
 
-  return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} userProfile={{nome: "Missionária"}}>
-      {renderView()}
-    </Layout>
-  );
-};
+      // 3. ABA TIMER/15 MINUTOS (NOVA!)
+      if (activeTab === 'timer') {
+        return (
+          <div className="flex flex-col items-center justify-center p-10 text-center">
+            <div className="w-20 h-20 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mb-4">
+               <i className="fa-solid fa-stopwatch text-3xl"></i>
+            </div>
+            <h2 className="text-xl font-bold text-gray-800">15 Minutos de Clamor</h2>
+            <p className="text-gray-500 mt-2">Prepare seu coração, o cronômetro está chegando.</p>
+          </div>
+        );
+      }
+
+      // 4. ABA COMUNIDADE (NOVA!)
+      if (activeTab === 'community') {
+        return (
+          <div className="p-6 text-center">
+            <i className="fa-solid fa-users text-brand-rose text-4xl mb-4"></i>
+            <h2 className="text-xl font-bold">Mural da Comunidade</h2>
+            <p className="text-gray-500">Em breve você poderá ver os pedidos de outras mães.</p>
+          </div>
+        );
+      }
+      
+      // PADRÃO: TELA HOME
+      return <HomeView profile={{name: currentUser?.displayName || "Missionária"}} onNavigate={setActiveTab} />;
+    } catch (e) {
+      return <div className="p-10 text-brand-rose">Ops! Algo deu errado ao carregar a aba.</div>;
+    }
+  };
 
 export default App;
