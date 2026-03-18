@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { getAuth } from 'firebase/auth';
-import Layout from './components/Layout';
-import HomeView from './views/Home';
-import FilhosView from './views/Filhos';
-import { usePrayers } from './hooks/usePrayers';
+import HomeView from './paginas/Home'; 
+import PrayersView from './paginas/Prayers';
+import FilhosView from './paginas/Filhos';
+import CommunityView from './paginas/Community';
+import TimerView from './paginas/Timer'; 
+import Profile from './paginas/Profile'; 
+import MemorialView from './paginas/Memorial'; 
+import RegisterView from './paginas/Register';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('home');
